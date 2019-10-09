@@ -19,7 +19,7 @@
             </thead>
             <tbody>
             {% for row in rows %}
-                <tr class="clickable" data-href='{{ url_for('project', project_name=row.Name) }}'>
+                <tr class="clickable" data-href='{{ url_for('corpora', project_name=row.Name) }}'>
                     {% for k in headers %}
                         <td class="mdl-data-table__cell--non-numeric">{{ row[k] }}</td>
                     {% endfor %}

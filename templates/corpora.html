@@ -9,7 +9,7 @@
         All unique corpora are listed below. Each may may be associated with more than 1 text file.
     </div>
     <div class="mdl-card__actions mdl-card--border">
-        <a href="{{ url_for('project', project_name=project_name) }}"
+        <a href="{{ url_for('corpora', project_name=project_name) }}"
            class="mdl-button">Re-load</a>
     </div>
 
@@ -25,20 +25,20 @@
                 </thead>
                 <tbody>
                 {% for row in rows %}
-                    <tr class="clickable" data-href='{{ url_for('corpus_stats', project_name=project_name, corpus_name=row.param_name) }}'>
-                        <td class="mdl-data-table__cell--non-numeric">
-
-                        </td>
+                    <tr class="clickable"
+                        data-href='{{ url_for('neighbors', project_name=project_name, corpus_name=row.corpus_name) }}'
+                        id="tooltip_id{{ loop.index0 }}">
                         {% for k in headers %}
-                            {%  if k != 'Param' %}
-                                <td class="mdl-data-table__cell--non-numeric">{{ row[k] }}</td>
-                            {% endif %}
+                            <td class="mdl-data-table__cell--non-numeric">
+                                {{ row[k] }}
+                            </td>
                         {% endfor %}
                     </tr>
-
                     <span class="mdl-tooltip" for="tooltip_id{{ loop.index0 }}">
                         {{ row.tooltip | safe }}
                     </span>
+
+
 
                 {% endfor %}
                 </tbody>
@@ -65,7 +65,7 @@
 {% endblock %}
 
 {% block ludwigviz_middle %}
-    <form action="{{ url_for('project', project_name=project_name) }}" id="form-group"></form>
+    <form action="{{ url_for('corpora', project_name=project_name) }}" id="form-group"></form>
 
     <div class="mdl-card__supporting-text">
         {% for header in headers %}

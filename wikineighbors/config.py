@@ -25,18 +25,9 @@ class LocalDirs:
 
 
 class Default:
-    header = 'Last modified'
-    order = 'ascending'
+    header = 'Corpus ID'
+    order = 'descending'
 
 
 class Time:
     format = '%H:%M %B %d'
-
-
-class Projects:
-    excluded = ['stdout', 'Example']
-
-
-class Chart:
-    x_name = 'x'
-    scale_factor = 1.4

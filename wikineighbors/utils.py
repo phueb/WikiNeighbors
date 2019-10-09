@@ -1,7 +1,5 @@
 import datetime
 import re
-import json
-import pandas as pd
 try:
     import altair
 except TypeError:
@@ -33,8 +31,8 @@ def sort_rows(rows, header, order):
     return res
 
 
-def to_param_id(param_name):
-    return regex_digit.search(param_name).group()
+def get_id_as_int(param_name):
+    return int(regex_digit.search(param_name).group())
 
 
 def get_time_modified(p):
