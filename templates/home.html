@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+
+{% block ludwigviz_top %}
+{% endblock %}
+
+{% block ludwigviz_middle %}
+    {% if rows %}
+    <div class="mdl-card__title">
+        <h3 class="mdl-card__title-text">Projects:</h3>
+    </div>
+    <div class="contains-table">
+        <table class="mdl-data-table mdl-js-data-table">
+            <thead>
+                <tr>
+                    {% for header in headers %}
+                        <th class="mdl-data-table__cell--non-numeric">{{ header }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in rows %}
+                <tr class="clickable" data-href='{{ url_for('project', project_name=row.Name) }}'>
+                    {% for k in headers %}
+                        <td class="mdl-data-table__cell--non-numeric">{{ row[k] }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="mdl-card__title">
+        <h3 class="mdl-card__title-text">No projects found</h3>
+    </div>
+    {% endif %}
+
+    <script type='text/javascript'>
+    $(document).ready(function() {
+        $("td input").click(function (e) {
+            e.stopPropagation();
+        });
+        $(".clickable").click(function (e) {
+            if (e.target.tagName !== 'SPAN') {
+                window.location = $(this).data("href");
+            }
+        });
+    });
+    </script>
+{% endblock %}
+
+{% block ludwigviz_bottom %}
+{% endblock %}
+
+

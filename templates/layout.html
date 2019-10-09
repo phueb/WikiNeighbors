@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mdl-jquery-modal-dialog.css') }}">
+    <script src="{{ url_for('static', filename='js/mdl-jquery-modal-dialog.js') }}"></script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="Browser interface for Tensorflow RNN Language Models">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <title>{{ topbar_dict.title }}</title>
+
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Roboto:regular,bold,italic,thin,light,bolditalic,black,medium&amp;lang=en">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.deep_orange-orange.min.css"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+
+{#    TODO test embedding of alt-air plot#}
+    <style>
+    .vega-actions a {
+        margin-right: 12px;
+        color: #757575;
+        font-weight: normal;
+        font-size: 13px;
+    }
+    .error {
+        color: red;
+    }
+  </style>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm//vega@5"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm//vega-lite@3.4.0"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm//vega-embed@4"></script>
+
+
+
+</head>
+<body>
+<div class="ludwigviz-layout mdl-layout mdl-js-layout mdl-layout--fixed-header">
+    <header class="mdl-layout__header">
+        <a href="{{url_for('home')}}">
+            <div class="mdl-layout__header-row">
+                <h3 id="title">{{ topbar_dict.title }}</h3>
+                <div class="mdl-layout-spacer"></div>
+                <span id="version">
+                    Listing: {{ topbar_dict.listing }} | Version: {{ topbar_dict.version }}  |  Host: {{ topbar_dict.hostname }}
+                </span>
+            </div>
+        </a>
+    </header>
+    <main class="mdl-layout__content">
+        <div class="ludwigviz-top mdl-shadow--2dp mdl-color--white mdl-cell--8-col">
+                {% block ludwigviz_top %}{% endblock %}
+            </div>
+        <div class="ludwigviz-middle mdl-shadow--2dp mdl-color--white mdl-cell--8-col">
+                {% block ludwigviz_middle %}{% endblock %}
+            </div>
+
+        <div class="ludwigviz-bottom mdl-shadow--2dp mdl-color--white mdl-cell--8-col">
+                {% block ludwigviz_bottom %}{% endblock %}
+            </div>
+    </main>
+</div>
+
+<script src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+
+<script type='text/javascript'>
+$(document).ready(function() {
+    $('.mdl-button').click(function(){
+        showLoading();
+    });
+
+});
+</script>
+
+
+</body>
+</html>
