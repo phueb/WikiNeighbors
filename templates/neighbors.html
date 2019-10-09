@@ -24,6 +24,9 @@
 
     <div class="mdl-card__supporting-text">
         Number of text files associated with corpus: {{ num_param_names | safe }}
+        {%  for path in paths_to_txt_files %}
+        <p  style="margin-bottom: 0">{{ path }}</p>
+    {%  endfor %}
     </div>
 
 
