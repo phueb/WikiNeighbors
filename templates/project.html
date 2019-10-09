@@ -6,7 +6,7 @@
 
     </div>
     <div class="mdl-card__supporting-text">
-        All unique runs are listed below. Each may may contain more than 1 job.
+        All unique corpora are listed below. Each may may be associated with more than 1 text file.
     </div>
     <div class="mdl-card__actions mdl-card--border">
         <a href="{{ url_for('project', project_name=project_name) }}"
@@ -25,17 +25,9 @@
                 </thead>
                 <tbody>
                 {% for row in rows %}
-                    <tr class="clickable" data-href='{{ url_for('corpus_stats', project_name=project_name, param_name=row.param_name) }}'>
+                    <tr class="clickable" data-href='{{ url_for('corpus_stats', project_name=project_name, corpus_name=row.param_name) }}'>
                         <td class="mdl-data-table__cell--non-numeric">
-                            <label for="row_id{{ loop.index0 }}" class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect mdl-data-table__select">
-{#                                <input type="checkbox"#}
-{#                                       name="param_name"#}
-{#                                       id="row_id{{ loop.index0 }}"#}
-{#                                       class="mdl-checkbox__input"#}
-{#                                       value="{{ row.param_name }}"#}
-{#                                       form="form-group_action">#}
-{#                                <span class="mdl-checkbox__label" id="tooltip_id{{ loop.index0 }}">{{ row.Param }}</span>#}
-                            </label>
+
                         </td>
                         {% for k in headers %}
                             {%  if k != 'Param' %}

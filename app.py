@@ -1,6 +1,6 @@
 from flask import Flask, redirect, url_for
 from flask import render_template
-from flask import request, session
+from flask import request
 import argparse
 import socket
 
@@ -15,13 +15,17 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
-
     return redirect(url_for('project', project_name='CreateWikiCorpus'))
 
 
 @app.route('/<string:project_name>', methods=['GET', 'POST'])
 def project(project_name):
     headers, rows = make_params_headers_and_rows(project_name)
+
+
+    # TODO do not display parameter configurations - display corpus_names (an abstraction)
+    # TODO do this by removing all param_names which are identical save for 'part'
+
 
     # sort
     if rows:
@@ -36,42 +40,33 @@ def project(project_name):
                            headers=headers)
 
 
-@app.route('/<string:project_name>/plot', methods=['GET', 'POST'])
-def corpus_stats(project_name):
-    """
-    is requested in two ways:
-    1. directly clicking on row in project.html
-    2. by selecting multiple runs and clicking on "plot" button
+@app.route('/<string:project_name>/<string:corpus_name>', methods=['GET', 'POST'])
+def corpus_stats(project_name, corpus_name):
 
-    in case 1, param_names is retrieved from request object.
-    in case 2, param_names is retrieved from session object (because of redirect)
 
-    check request object first, and only then check session
-    """
+    # TODO do not display param_names - display a CORPUS (an abstraction over param_names)
+    num_txt_files = 0
 
-    param_names = request.args.getlist('param_name') or session.get('param_names')
+    # param_names = to_param_names(corpus_name)
+    param_names = ['param_1']  # TODO remove
+    for param_name in param_names:
+        param_path = to_param_path(project_name, param_name)
 
-    assert len(param_names) == 1  # TODO only allow 1
-    first_param_path = to_param_path(project_name, param_names[0])
+        # check that articles are available (bodies.txt files)
+        body_path = [p for p in param_path.rglob('bodies.txt')][0]
+        num_bodies = len(body_path)
+        if num_bodies == 0:
+            raise LudwigVizNoArticlesFound(param_path)
+        elif num_bodies > 1:
+            raise SystemError('Found more than 1 bodies.txt files in {}'.format(param_name))
 
-    # check that articles are available (bodies.txt files)
-    bodies_paths = [p for p in first_param_path.rglob('bodies.txt')]
-    num_bodies = len(bodies_paths)
-    if not num_bodies:
-        raise LudwigVizNoArticlesFound(first_param_path)
+        num_txt_files += 1
 
-    with bodies_paths[0].open('r') as f:
-        first_line = '<p>{}</p>'.format(f.readline())
-
-    # get number of reps for each param_name
-    param_name2n = {param_name: count_replications(project_name, param_name)
-                    for param_name in param_names}
     return render_template('corpus_stats.html',
                            topbar_dict=topbar_dict,
                            project_name=project_name,
                            param_names=param_names,
-                           param_name2n=param_name2n,
-                           first_line=first_line
+                           num_txt_files=num_txt_files
                            )
 
 
@@ -90,26 +85,6 @@ def which_hidden_btns():
     else:
         result = 'none'
     return result
-
-
-# -------------------------------------------- actions
-
-
-@app.route('/delete_many/<string:project_name>', methods=['GET', 'POST'])
-def delete_many(project_name):
-    if request.args.get('delete_many') is not None:
-
-        print(request.args)
-
-        param_names = request.args.getlist('param_name')
-
-        for param_name in param_names:
-            delete_path = config.RemoteDirs.research_data / project_name / 'runs' / param_name
-            print('Deleting {}'.format(delete_path))
-
-            # TODO actually implement it
-
-    return redirect(url_for('project'))
 
 
 # -------------------------------------------- error handling
@@ -164,10 +139,9 @@ if __name__ == "__main__":  # pycharm does not use this
     # import after specifying path to data
     from wikineighbors import config
     from wikineighbors.io import make_params_headers_and_rows
+    from wikineighbors.io import to_param_names
     from wikineighbors.utils import sort_rows
     from wikineighbors.utils import to_param_path
-    from wikineighbors.io import count_replications
-    from wikineighbors.io import Params
 
     topbar_dict = {'listing': config.RemoteDirs.research_data,
                    'hostname': hostname,

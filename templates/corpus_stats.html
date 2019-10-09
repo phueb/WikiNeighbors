@@ -8,7 +8,7 @@
     </div>
     <div class="mdl-card__supporting-text">
     {%  for param_name in param_names %}
-        <p>{{ param_name }} | n={{ param_name2n[param_name] }}</p>
+        <p>{{ param_name }}</p>
     {%  endfor %}
     </div>
     <div class="mdl-card__actions mdl-card--border">
@@ -23,8 +23,7 @@
 {% block ludwigviz_middle %}
 
     <div class="mdl-card__supporting-text">
-    First Line:
-    {{ first_line | safe }}
+        Number of text files associated with corpus: {{ num_txt_files | safe }}
     </div>
 
 
