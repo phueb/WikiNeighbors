@@ -73,14 +73,6 @@
 {% endblock %}
 
 {% block ludwigviz_middle %}
-
-{% endblock %}
-
-
-
-
-
-{% block ludwigviz_bottom %}
     <form action="{{ url_for('project', project_name=project_name) }}" id="form-group"></form>
 
     <div class="mdl-card__supporting-text">
@@ -141,4 +133,8 @@
             });
         });
     </script>
+
+{% endblock %}
+{% block ludwigviz_bottom %}
+
 {% endblock %}
