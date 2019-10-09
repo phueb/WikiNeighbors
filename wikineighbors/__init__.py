@@ -1,12 +1,11 @@
 import sys
 
-if 'win' in sys.platform:
-    raise SystemExit('Ludwig does not support Windows')
+if sys.platform == 'dawrwin':
+    mnt_point = '/Volumes'
 elif 'linux' == sys.platform:
     mnt_point = '/media'
 else:
-    # assume MacOS
-    mnt_point = '/Volumes'
+    raise SystemExit('Ludwig is not supported on this platform')
 
 
 __version__ = '1.0.0'
