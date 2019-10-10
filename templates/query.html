@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block ludwigviz_top %}
+
+    <div class="mdl-card__title">
+        <h3 class="mdl-card__title-text">{{ corpus_name }}</h3>
+
+    </div>
+    <div class="mdl-card__actions mdl-card--border">
+        <a href="{{ url_for('neighbors', corpus_name=corpus_name) }}"
+           class="mdl-button">Re-load</a>
+        <a href="{{ url_for('query', corpus_name=corpus_name) }}"
+           class="mdl-button">Back</a>
+    </div>
+
+{% endblock %}
+
+{% block ludwigviz_middle %}
+    <div class="mdl-card__supporting-text">
+        <form action="{{ url_for('query', corpus_name=corpus_name) }}">
+            <div class="mdl-textfield mdl-js-textfield ">
+                {{ form.field(type='text', class='mdl-textfield__input')|safe }}
+            </div>
+        </form>
+        {% if form.field.errors %}
+            {% for error in form.field.errors %}
+                <span style="color:red">{{ error }}</span>
+            {% endfor %}
+        {% endif %}
+    </div>
+    <script type='text/javascript'>
+        $(document).ready(function() {
+            $.ajax({url: '{{ url_for("autocomplete") }}'}).done(
+                function (data) {
+                    $('#field').autocomplete({
+                        source: data.json_list,
+                        minLength: 1
+                    });
+                });
+        });
+    </script>
+{% endblock %}
+
+{% block ludwigviz_bottom %}
+{% endblock %}

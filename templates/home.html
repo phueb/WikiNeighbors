@@ -1,54 +1,93 @@
 {% extends "layout.html" %}
 
 {% block ludwigviz_top %}
-{% endblock %}
-
-{% block ludwigviz_middle %}
-    {% if rows %}
     <div class="mdl-card__title">
-        <h3 class="mdl-card__title-text">Projects:</h3>
+        <h3 class="mdl-card__title-text">{{ title }}</h3>
+
     </div>
-    <div class="contains-table">
-        <table class="mdl-data-table mdl-js-data-table">
-            <thead>
+    <div class="mdl-card__supporting-text">
+        All unique corpora are listed below. Each may may be associated with more than 1 text file.
+    </div>
+    <div class="mdl-card__actions mdl-card--border">
+        <a href="{{ url_for('home') }}"
+           class="mdl-button">Re-load</a>
+    </div>
+
+    {% if rows %}
+        <div class="contains-table">
+            <table class="mdl-data-table">
+                <thead>
                 <tr>
                     {% for header in headers %}
                         <th class="mdl-data-table__cell--non-numeric">{{ header }}</th>
                     {% endfor %}
                 </tr>
-            </thead>
-            <tbody>
-            {% for row in rows %}
-                <tr class="clickable" data-href='{{ url_for('corpora', project_name=row.Name) }}'>
-                    {% for k in headers %}
-                        <td class="mdl-data-table__cell--non-numeric">{{ row[k] }}</td>
-                    {% endfor %}
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                {% for row in rows %}
+                    <tr data-href='{{ url_for('query', corpus_name=row.corpus_name) }}'
+                        id="tooltip_id{{ loop.index0 }}">
+                        {% for k in headers %}
+                            <td class="mdl-data-table__cell--non-numeric">
+                                {{ row[k] }}
+                            </td>
+                        {% endfor %}
+                        {% for button in buttons %}
+                            <td class="mdl-data-table__cell--non-numeric">
+                                <a href="{{ url_for(button, corpus_name=row.corpus_name) }}"
+                                   class="corpus-button">{{ button }}</a>
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    <span class="mdl-tooltip" for="tooltip_id{{ loop.index0 }}">
+                        {{ row.tooltip | safe }}
+                    </span>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
     {% else %}
-    <div class="mdl-card__title">
-        <h3 class="mdl-card__title-text">No projects found</h3>
-    </div>
+        <div class="mdl-card__title">
+            <h3 class="mdl-card__title-text">No jobs found</h3>
+        </div>
     {% endif %}
 
-    <script type='text/javascript'>
-    $(document).ready(function() {
-        $("td input").click(function (e) {
-            e.stopPropagation();
-        });
-        $(".clickable").click(function (e) {
-            if (e.target.tagName !== 'SPAN') {
-                window.location = $(this).data("href");
-            }
-        });
-    });
-    </script>
+
+{% endblock %}
+
+{% block ludwigviz_middle %}
+    <form action="{{ url_for('home', project_name=project_name) }}" id="form-group"></form>
+
+    <div class="mdl-card__supporting-text">
+        {% for header in headers %}
+            <label for="header_id{{ loop.index0 }}" class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect">
+                <input type="checkbox"
+                       name="header"
+                       id="header_id{{ loop.index0 }}"
+                       class="mdl-checkbox__input"
+                       value="{{ header }}" form="form-group">
+                <span class="mdl-checkbox__label">{{ header }}</span>
+            </label>
+        {% endfor %}
+
+        {% for order in ['ascending', 'descending'] %}
+            <label for="order_id{{ loop.index0 }}" class="mdl-radio mdl-js-radio mdl-js-ripple-effect inline-radio">
+                <input type="radio"
+                       name="order"
+                       id="order_id{{ loop.index0 }}"
+                       class="mdl-radio__button"
+                       value="{{ order }}" form="form-group">
+                <span class="mdl-radio__label">{{ order }}</span>
+            </label>
+        {% endfor %}
+
+    </div>
+
+    <div class="mdl-card__actions mdl-card--border">
+        <input type="submit" name="reorder" class="mdl-button" value="Re-order" form="form-group">
+    </div>
+
 {% endblock %}
 
 {% block ludwigviz_bottom %}
 {% endblock %}
-
-

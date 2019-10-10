@@ -39,14 +39,14 @@ class Params:
         return res
 
 
-def count_replications(project_name, param_name):
+def count_replications(param_name):
     """
     do not count files like .DS_Store and param2val.yaml
     """
-    return len(list(to_param_path(project_name, param_name).glob('[!.]*[!.yaml]')))
+    return len(list(to_param_path(param_name).glob('[!.]*[!.yaml]')))
 
 
-def make_corpus_headers_and_rows(project_name):
+def make_corpus_headers_and_rows():
     """
     make a row for each corpus - an abstraction over possibly many parameter configurations
     because a corpus is typically created in parallel on multiple machines, producing multiple bodies.txt files.
@@ -57,7 +57,7 @@ def make_corpus_headers_and_rows(project_name):
     stripped_param2vals = []
     headers = ['Corpus ID', 'Last modified']
     rows = []
-    all_param_paths = (config.RemoteDirs.research_data / project_name / 'runs').glob('param*')
+    all_param_paths = config.RemoteDirs.runs.glob('param*')
     for p in sorted(all_param_paths, key=lambda p: get_id_as_int(p.name)):
         params = Params(p)
         # do not assign a row to a configuration which has already been assigned a row
@@ -71,7 +71,7 @@ def make_corpus_headers_and_rows(project_name):
                    'corpus_name': corpus_name,
                    'tooltip': params,
                    }
-            assert count_replications(project_name, p.name) == 1
+            assert count_replications(p.name) == 1
             rows.append(row)
 
         stripped_param2vals.append(params.stripped_param2val)

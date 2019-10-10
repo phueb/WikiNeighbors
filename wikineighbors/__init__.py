@@ -9,5 +9,3 @@ else:
 
 
 __version__ = '1.0.0'
-
-dummy_data = None  # overwrite if using dummy

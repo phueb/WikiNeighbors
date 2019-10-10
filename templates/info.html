@@ -6,10 +6,15 @@
         <h3 class="mdl-card__title-text">{{ corpus_name }}</h3>
 
     </div>
+    <div class="mdl-card__supporting-text">
+    {%  for param_name in param_names %}
+        <p  style="margin-bottom: 0">{{ param_name }}</p>
+    {%  endfor %}
+    </div>
     <div class="mdl-card__actions mdl-card--border">
         <a href="{{ url_for('neighbors', corpus_name=corpus_name) }}"
            class="mdl-button">Re-load</a>
-        <a href="{{ url_for('query', corpus_name=corpus_name) }}"
+        <a href="{{ url_for('home') }}"
            class="mdl-button">Back</a>
     </div>
 
@@ -17,13 +22,11 @@
 
 {% block ludwigviz_middle %}
 
-    <div class="mdl-card__title">
-        <h4 class="mdl-card__title-text">Nearest Neighbors</h4>
-    </div>
     <div class="mdl-card__supporting-text">
-        {%  for word in words %}
-            {{ word }}
-        {% endfor %}
+        Number of text files associated with corpus: {{ num_param_names | safe }}
+        {%  for path in paths_to_txt_files %}
+        <p  style="margin-bottom: 0">{{ path }}</p>
+    {%  endfor %}
     </div>
 
 
@@ -31,3 +34,4 @@
 
 {% block ludwigviz_bottom %}
 {% endblock %}
+

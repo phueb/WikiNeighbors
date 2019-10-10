@@ -1,20 +1,15 @@
 from pathlib import Path
 import os
 
-from wikineighbors import dummy_data, mnt_point
+from wikineighbors import mnt_point
 
 
 class RemoteDirs:
+    research_data = Path(mnt_point) / 'research_data'
+    if not os.path.ismount(research_data):
+        raise OSError('{} not mounted.'.format(research_data))
 
-    if dummy_data is None:
-        research_data = Path(mnt_point) / 'research_data'
-        if not os.path.ismount(str(research_data)):
-            print('WARNING: {} not mounted.'
-                  'Using dummy directory for development'.format(research_data))
-            research_data = Path(mnt_point) / 'dummy_data'
-    # use dummy
-    else:
-        research_data = Path(dummy_data)
+    runs = research_data / 'CreateWikiCorpus' /'runs'
 
 
 class LocalDirs:
@@ -27,6 +22,7 @@ class LocalDirs:
 class Default:
     header = 'Corpus ID'
     order = 'descending'
+    text = 'Type a word here'
 
 
 class Time:

@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, url_for, jsonify, session
 from flask import render_template
 from flask import request
 import argparse
@@ -15,32 +15,47 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
-    return redirect(url_for('corpora', project_name='CreateWikiCorpus'))
-
-
-@app.route('/<string:project_name>', methods=['GET', 'POST'])
-def corpora(project_name):
-    headers, rows = make_corpus_headers_and_rows(project_name)  # returns 1 row per corpus not per param_name
+    headers, rows = make_corpus_headers_and_rows()  # returns 1 row per corpus not per param_name
     # sort
     if rows:
         header = request.args.get('header') or config.Default.header
         order = request.args.get('order') or config.Default.order
         rows = sort_rows(rows, header, order)
 
-    return render_template('corpora.html',
+    buttons = ['query', 'info']  # careful, these must also be names of URLS
+
+    return render_template('home.html',
                            topbar_dict=topbar_dict,
-                           project_name=project_name,
+                           title='Wikipedia Corpora',
                            rows=rows,
+                           buttons=buttons,
                            headers=headers)
 
 
-@app.route('/<string:project_name>/<string:corpus_name>', methods=['GET', 'POST'])
-def neighbors(project_name, corpus_name):
+@app.route('/neighbors/<string:corpus_name>', methods=['GET', 'POST'])
+def neighbors(corpus_name):
+
+    words = session['words']
+
+    # TODO calculate neighbors:
+    #  * we have paths_to_txt_files, so load all the text files
+    #  * compute big co-occurrence matrix
+    #  * lookup a row (associated with word "doctor" for example) and calc similarity to all other rows
+
+    return render_template('neighbors.html',
+                           topbar_dict=topbar_dict,
+                           corpus_name=corpus_name,
+                           words=words,
+                           )
+
+
+@app.route('/info/<string:corpus_name>', methods=['GET', 'POST'])
+def info(corpus_name):
     paths_to_txt_files = []
     param_names = []
     parts = set()
     for param_name in gen_param_names_to_100(corpus_name):  # careful with infinite loop
-        param_path = to_param_path(project_name, param_name)
+        param_path = to_param_path(param_name)
 
         # make sure path exists
         if not param_path.exists():
@@ -64,14 +79,8 @@ def neighbors(project_name, corpus_name):
         parts.add(params.part)
         param_names.append(param_name)
 
-    # TODO calculate neighbors:
-    #  * we have paths_to_txt_files, so load all the text files
-    #  * compute big co-occurrence matrix
-    #  * lookup a row (associated with word "doctor" for example) and calc similarity to all other rows
-
-    return render_template('neighbors.html',
+    return render_template('info.html',
                            topbar_dict=topbar_dict,
-                           project_name=project_name,
                            param_names=param_names,
                            corpus_name=corpus_name,
                            num_param_names=len(param_names),
@@ -79,24 +88,40 @@ def neighbors(project_name, corpus_name):
                            )
 
 
-# ----------------------------------------------- ajax
+# ----------------------------------------------- text field
 
-@app.route('/which_hidden_btns/', methods=['GET'])
-def which_hidden_btns():
-    """
-    count how many checkboxes clicked on corpora.html to determine which buttons are legal
-    """
-    num_checkboxes_clicked = int(request.args.get('num_checkboxes_clicked'))
-    if num_checkboxes_clicked == 2:
-        result = 'both'
-    elif num_checkboxes_clicked > 0:
-        result = 'any'
+@app.route('/autocomplete/', methods=['GET'])
+def autocomplete():
+    return jsonify(json_list=session['vocab'])
+
+
+@app.route('/query/<string:corpus_name>/', methods=['GET', 'POST'])
+def query(corpus_name):
+    # form
+    form = make_form(request)
+
+    # TODO to use autocomplete AND query multiple words, add a
+    #  button which adds another form that user can click (multiple times)
+
+    # autocomplete
+    # vocab = get_vocab_from_corpus(corpus_name)  # TODO
+    vocab = ['aaa', 'bbb', 'ccc']
+    session['vocab'] = vocab  # TODO probably too big for session
+
+    # calculate neighbors or return back here
+    if form.validate():
+        words = form.field.data.split()
+        session['words'] = words
+        return redirect(url_for('neighbors', corpus_name=corpus_name))
     else:
-        result = 'none'
-    return result
-
+        return render_template('query.html',
+                               topbar_dict=topbar_dict,
+                               corpus_name=corpus_name,
+                               form=form,
+                               )
 
 # -------------------------------------------- error handling
+
 
 class LudwigVizNoArticlesFound(Exception):
     def __init__(self, param_p, status_code=500):
@@ -152,6 +177,7 @@ if __name__ == "__main__":  # pycharm does not use this
     from wikineighbors.io import Params
     from wikineighbors.utils import sort_rows
     from wikineighbors.utils import to_param_path
+    from wikineighbors.form import make_form
 
     topbar_dict = {'listing': config.RemoteDirs.research_data,
                    'hostname': hostname,

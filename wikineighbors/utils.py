@@ -11,8 +11,8 @@ from wikineighbors import config
 regex_digit = re.compile(r'[0-9]+')
 
 
-def to_param_path(project_name, param_name):
-    return config.RemoteDirs.research_data / project_name / 'runs' / param_name
+def to_param_path(param_name):
+    return config.RemoteDirs.runs / param_name
 
 
 def sort_rows(rows, header, order):
