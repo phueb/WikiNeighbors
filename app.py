@@ -3,6 +3,8 @@ from flask import render_template
 from flask import request
 import argparse
 import socket
+from appdirs import AppDirs
+
 
 import wikineighbors
 
@@ -10,8 +12,11 @@ hostname = socket.gethostname()
 
 app = Flask(__name__)
 
+dirs = AppDirs(wikineighbors.__name__, wikineighbors.__author__, wikineighbors.__version__)
+user_cache_dir = dirs.user_cache_dir  # TODO use for caching wiki data
 
 # ------------------------------------------------ views
+
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
