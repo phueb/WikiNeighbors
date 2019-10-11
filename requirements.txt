@@ -4,3 +4,6 @@ wtforms
 altair
 PyYaml
 appdirs
+cached_property
+stop_words
+scikit-learn

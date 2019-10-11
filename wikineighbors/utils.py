@@ -38,3 +38,21 @@ def get_id_as_int(param_name):
 def get_time_modified(p):
     return datetime.datetime.fromtimestamp(
         p.lstat().st_mtime).strftime(config.Time.format)
+
+
+def gen_100_param_names(corpus_name):
+    """
+    assumptions:
+    1. assume that param_ids were assigned in order.
+    2. each corpus was generated with no more than 100 Ludwig workers.
+    count up 100 and let downstream logic stop the generator."""
+    first_param_id = get_id_as_int(corpus_name)
+    for param_id in range(first_param_id, first_param_id + 100):
+        yield 'param_{}'.format(param_id)
+
+
+def count_replications(param_name):
+    """
+    do not count files like .DS_Store and param2val.yaml
+    """
+    return len(list(to_param_path(param_name).glob('[!.]*[!.yaml]')))

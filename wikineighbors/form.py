@@ -4,7 +4,7 @@ from wtforms import Form, StringField
 from wikineighbors import config
 
 
-def make_form(request):
+def make_form(request, corpus):
 
     # first attempt
     if not request.args:
@@ -13,7 +13,7 @@ def make_form(request):
 
     # request.args only if first attempt did not result in validation
     else:
-        valid_set = ['aaa', 'bbb', 'ccc']  # TODO load wiki vocab here
+        valid_set = corpus.vocab
         message = 'Found non-word.'
 
     def validator(form, field):

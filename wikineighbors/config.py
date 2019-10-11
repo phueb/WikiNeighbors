@@ -27,3 +27,9 @@ class Default:
 
 class Time:
     format = '%H:%M %B %d'
+
+
+class Max:
+    num_words = 100
+    num_docs = 100
+    num_neighbors = 10
