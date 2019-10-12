@@ -1,14 +1,18 @@
 import datetime
 import re
-try:
-    import altair
-except TypeError:
-    raise RuntimeError('altair requires Python > =3.5.3')
+from math import log, floor
 
 
 from wikineighbors import config
 
 regex_digit = re.compile(r'[0-9]+')
+
+
+def human_format(number):
+    units = ['', 'K', 'M', 'G', 'T', 'P']
+    k = 1000.0
+    magnitude = int(floor(log(number, k)))
+    return '%.2f%s' % (number / k**magnitude, units[magnitude])
 
 
 def to_param_path(param_name):

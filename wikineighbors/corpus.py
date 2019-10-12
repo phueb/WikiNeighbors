@@ -68,7 +68,7 @@ class Corpus:
     def gen_docs(self):
         for p in self.txt_paths:
             with p.open('r') as f:
-                for doc in f.readlines():
+                for doc in f:  # lazy generator
                     yield doc
 
     @cached_property

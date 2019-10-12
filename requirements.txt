@@ -1,7 +1,6 @@
 flask
 pandas
 wtforms
-altair
 PyYaml
 appdirs
 cached_property

@@ -30,6 +30,6 @@ class Time:
 
 
 class Max:
-    num_words = 100
-    num_docs = 100
+    num_words = 10000
+    num_docs = 10000
     num_neighbors = 10

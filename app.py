@@ -4,12 +4,14 @@ from flask import request
 import argparse
 import socket
 from appdirs import AppDirs
+from timeit import default_timer as timer
 
 import wikineighbors
 from wikineighbors.exceptions import LudwigVizNoArticlesFound
 from wikineighbors import config
 from wikineighbors.io import make_corpus_headers_and_rows
 from wikineighbors.utils import sort_rows
+from wikineighbors.utils import human_format
 from wikineighbors.form import make_form
 from wikineighbors.corpus import Corpus
 
@@ -44,7 +46,7 @@ def home():
 
 @app.route('/neighbors/<string:corpus_name>', methods=['GET', 'POST'])
 def neighbors(corpus_name):
-    corpus = Corpus(corpus_name, vocab=session['vocab'])
+    corpus = Corpus(corpus_name)
 
     results = []
     for word in session['words']:
@@ -77,11 +79,15 @@ def info(corpus_name):
 
 @app.route('/autocomplete/', methods=['GET'])
 def autocomplete():
+
+    # TODO cookie limit is 4093 bytes - so this needs to be pre-generated (in cache)
+
     return jsonify(json_list=session['vocab'])
 
 
 @app.route('/query/<string:corpus_name>/', methods=['GET', 'POST'])
 def query(corpus_name):
+    start = timer()
     corpus = Corpus(corpus_name)
 
     # form
@@ -93,21 +99,25 @@ def query(corpus_name):
     # TODO is running app on server faster?
 
     # autocomplete
-    # vocab = ['aaa', 'bbb', 'ccc']
-    session['vocab'] = corpus.vocab  # TODO probably too big for session
-
-    print(corpus.vocab)
+    session['vocab'] = corpus.vocab  # TODO limit is 4093 bytes
 
     # calculate neighbors or return back here
     if form.validate():
         words = form.field.data.split()  # TODO only allow a single word per form - string, not list
         session['words'] = words
+
+        print(len(session['words']))
+
         return redirect(url_for('neighbors', corpus_name=corpus_name))
     else:
+        elapsed = timer() - start
         return render_template('query.html',
                                topbar_dict=topbar_dict,
                                corpus_name=corpus_name,
                                form=form,
+                               num_words=human_format(config.Max.num_words),
+                               num_docs=human_format(config.Max.num_docs),
+                               elapsed=elapsed
                                )
 
 # -------------------------------------------- error handling
