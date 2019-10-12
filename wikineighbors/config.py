@@ -22,14 +22,13 @@ class LocalDirs:
     root = Path(__file__).parent.parent
     src = root / 'wikineighbors'
     static = root / 'static'
-    cache = Path(dirs.user_cache_dir)  # TODO use for caching wiki data
+    cache = Path(dirs.user_cache_dir)
 
 
 class Default:
     header = 'Corpus ID'
     order = 'descending'
     word = ''
-    num_fields = 3
 
 
 class Time:
@@ -37,6 +36,7 @@ class Time:
 
 
 class Max:
+    num_fields = 50
     num_words = 10000
     num_docs = 10000
     num_neighbors = 10

@@ -48,21 +48,14 @@ def info(corpus_name):
 
 @app.route('/query/<string:corpus_name>', methods=['GET', 'POST'])
 def query(corpus_name):
-    corpus = Corpus(corpus_name)
-    # session.clear()
 
     if not session.get('error_messages', []):
         error_message = ''
         fields = [(config.Default.word, error_message)
-                  for _ in range(config.Default.num_fields)]
+                  for _ in range(config.Max.num_fields)]
     else:
         fields = [(word, error_message)
                   for word, error_message in zip(session['words'], session['error_messages'])]
-
-    if not corpus.cached_vocab_sizes:
-        raise WikiNeighborsNoVocabFound
-
-    # TODO add a button which adds another form that user can click (multiple times)
 
     return render_template('query.html',
                            topbar_dict=topbar_dict,
@@ -141,11 +134,6 @@ def validate(corpus_name):
         return redirect(url_for('query', corpus_name=corpus_name))
     else:
         return redirect(url_for('neighbors', corpus_name=corpus_name))
-
-
-@app.route('/add_field/<string:corpus_name>', methods=['GET'])
-def add_field(corpus_name):
-    raise NotImplementedError  # TODO implement
 
 
 @app.route('/cache_vocab/<string:corpus_name>', methods=['GET', 'POST'])

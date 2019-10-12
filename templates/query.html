@@ -21,22 +21,24 @@
         <div class="mdl-card__supporting-text" id="fields-div">
 
             {%  for word, msg in fields %}
-                <div class="mdl-textfield mdl-js-textfield ">
-                    <input class="mdl-textfield__input"
-                           id="field_id{{ loop.index0 }}"
-                           name="word"
-                           type="text"
-                           value="{{ word }}">
-                    <label class="mdl-textfield__label" for="field_id{{ loop.index0 }}">
-                        Word {{ loop.index }}
-                    </label>
-                    <span class="mdl-textfield__error" style="visibility: visible">{{ msg }}</span>
+                <div class="hidden-field" style="display: none">
+                    <div class="mdl-textfield mdl-js-textfield">
+                        <input class="mdl-textfield__input"
+                               id="field_id{{ loop.index0 }}"
+                               name="word"
+                               type="text"
+                               value="{{ word }}">
+                        <label class="mdl-textfield__label" for="field_id{{ loop.index0 }}">
+                            Word {{ loop.index }}
+                        </label>
+                        <span class="mdl-textfield__error" style="visibility: visible">{{ msg }}</span>
+                    </div>
+                    <div class="mdl-layout-spacer"></div>
                 </div>
-                <div class="mdl-layout-spacer"></div>
             {% endfor %}
         </div>
 
-        <div class="mdl-card__supporting-text" id="fields-div">
+        <div class="mdl-card__supporting-text">
             <span class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored"
                   id ="field-adder">
                 <i class="material-icons">add</i>
@@ -61,7 +63,7 @@
                 });
 
             $('#field-adder').click(function () {
-                $('#fields-div').append('Hey!')
+                $('.hidden-field:hidden').first().show()
             })
 
         });
