@@ -46,6 +46,7 @@ def home():
 
 @app.route('/neighbors/<string:corpus_name>', methods=['GET', 'POST'])
 def neighbors(corpus_name):
+    start = timer()
     corpus = Corpus(corpus_name)
 
     results = []
@@ -55,10 +56,14 @@ def neighbors(corpus_name):
         top_neighbors = sorted_neighbors[-config.Max.num_neighbors:]
         results.append('<b>{}:</b> {}'.format(word, ', '.join(top_neighbors)))
 
+    elapsed = timer() - start
     return render_template('neighbors.html',
                            topbar_dict=topbar_dict,
                            corpus_name=corpus_name,
-                           results=results
+                           results=results,
+                           num_words = human_format(config.Max.num_words),
+                           num_docs = human_format(config.Max.num_docs),
+                           elapsed = elapsed
                            )
 
 
@@ -99,7 +104,7 @@ def query(corpus_name):
     # TODO is running app on server faster?
 
     # autocomplete
-    session['vocab'] = corpus.vocab  # TODO limit is 4093 bytes
+    session['vocab'] = []  # TODO limit is 4093 bytes - don't use it
 
     # calculate neighbors or return back here
     if form.validate():

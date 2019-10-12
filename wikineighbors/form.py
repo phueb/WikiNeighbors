@@ -6,7 +6,7 @@ from wikineighbors import config
 
 def make_form(request, corpus):
 
-    # first attempt
+    # page is first loaded without any user input
     if not request.args:
         valid_set = []  # no need to do expensive validation if no request
         message = ''
@@ -16,7 +16,7 @@ def make_form(request, corpus):
         valid_set = corpus.vocab
         message = 'Found non-word.'
 
-    def validator(form, field):
+    def validator(_, field):
         if config.Default.text in field.data:
             raise ValidationError(message)
         if not field.data:
