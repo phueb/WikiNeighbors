@@ -8,12 +8,6 @@ from timeit import default_timer as timer
 import wikineighbors
 from wikineighbors.exceptions import LudwigVizNoArticlesFound
 from wikineighbors.exceptions import LudwigVizNoVocabFound
-from wikineighbors import config
-from wikineighbors.io import make_corpus_headers_and_rows
-from wikineighbors.utils import sort_rows
-from wikineighbors.utils import human_format
-from wikineighbors.form import make_form
-from wikineighbors.corpus import Corpus
 
 hostname = socket.gethostname()
 
@@ -81,9 +75,6 @@ def info(corpus_name):
 @app.route('/autocomplete/<string:corpus_name>', methods=['GET'])
 def autocomplete(corpus_name):
     corpus = Corpus(corpus_name)
-
-    # TODO or load all vocabs in when app starts?
-
     return jsonify(json_list=corpus.vocab)
 
 
@@ -99,8 +90,6 @@ def query(corpus_name):
 
     # TODO to use autocomplete AND query multiple words, add a
     #  button which adds another form that user can click (multiple times)
-
-    # TODO is running app on server faster?
 
     # calculate neighbors or return back here
     if form.validate():
@@ -162,6 +151,7 @@ def handler(exception):
                            status_code=500,
                            topbar_dict=topbar_dict)
 
+
 @app.errorhandler(500)
 def handle_app_error(exception):
     return render_template('error.html',
@@ -183,9 +173,24 @@ def page_not_found(exception):
 
 if __name__ == "__main__":  # pycharm does not use this
     parser = argparse.ArgumentParser()
-    parser.add_argument('--no_debug', action="store_false", default=True, dest='debug',
+    parser.add_argument('--no-debug', action="store_false", default=True, dest='debug',
                         help='Use this for deployment.')
+    parser.add_argument('--s76', action="store_true", default=False, dest='s76',
+                        help='If running app on server where Wiki data is stored.')
     namespace = parser.parse_args()
+
+    if namespace.s76:
+        wikineighbors.s76 = True
+        print('Changing path to shared drive because --s76')
+
+    # import after setting s76
+
+    from wikineighbors import config
+    from wikineighbors.io import make_corpus_headers_and_rows
+    from wikineighbors.utils import sort_rows
+    from wikineighbors.utils import human_format
+    from wikineighbors.form import make_form
+    from wikineighbors.corpus import Corpus
 
     topbar_dict = {'listing': config.RemoteDirs.research_data,
                    'hostname': hostname,

@@ -6,13 +6,17 @@ Show neighbors in Wikipedia co-occurrence space via browser app
 
 ## Performance
 
-The following table shows the time it takes to load all relevant text files and build the co-occurrence matrix.
+The following table shows the time it takes to compute neighbors for 1 word.
 
-| # words | # documents | seconds |
-|---------|-------------|---------|
-| 100     | 100         | 2.5     |
-| 1,000   | 1,000       | 3.5     |
-| 10,000  | 10,000      | 8.0     |
+* number of words = 10K
+* number of documents = 10K
+
+| # words | app on server  | seconds |
+|---------|----------------|---------|
+| 10,000  | True           | 30      |
+| 10,000  | False          | 35      |
+
+
 
 ## TODO
 

@@ -7,6 +7,7 @@ elif 'linux' == sys.platform:
 else:
     raise SystemExit('Ludwig is not supported on this platform')
 
+s76 = False
 
 __version__ = '1.0.0'
 __author__ = 'Philip Huebner'

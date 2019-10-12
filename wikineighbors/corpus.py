@@ -1,7 +1,6 @@
 from cached_property import cached_property
 import numpy as np
 from collections import Counter
-from stop_words import get_stop_words
 from sklearn.metrics.pairwise import cosine_similarity
 from multiprocessing import Pool
 from timeit import default_timer as timer
@@ -14,7 +13,6 @@ from wikineighbors.exceptions import LudwigVizNoVocabFound
 from wikineighbors.utils import gen_100_param_names, to_param_path
 from wikineighbors import config
 
-stop_words = get_stop_words('en')
 
 
 class Corpus:
@@ -75,7 +73,7 @@ class Corpus:
     # --------------------------------------------------- counting words
 
     @staticmethod
-    def count_process(p, stop_num, vocab):
+    def make_doc_vectors(p, stop_num, vocab):
         print('Starting worker')
         res = []
         with p.open('r') as f:
@@ -90,7 +88,7 @@ class Corpus:
                     print('Stopping worker after:', n)
                     return res
 
-    def make_mat_with_cached_vocab(self):  # TODO threading? asyncio? - multiprocessing doesn't help
+    def make_mat_with_cached_vocab(self):
         print('Counting words in documents...')
         start = timer()
 
@@ -100,7 +98,7 @@ class Corpus:
         vocab = self.vocab
         num_docs_per_worker = config.Max.num_docs // num_workers
         pool = Pool(num_workers)
-        chunks = pool.starmap(self.count_process,
+        chunks = pool.starmap(self.make_doc_vectors,
                               [(p, num_docs_per_worker, vocab)
                                for p in txt_paths])
         pool.close()
@@ -137,17 +135,6 @@ class Corpus:
         return res
 
     # ------------------------------------------------------------ neighbors
-
-    @staticmethod
-    def make_term_by_doc_mat(vocab, w2dfs):
-        print('Making term-by-window matrix...')
-        res = np.zeros((config.Max.num_words, config.Max.num_docs))
-        for col_id, w2df in enumerate(w2dfs):
-            try:
-                res[:, col_id] = [w2df[w] for w in vocab]
-            except IndexError:  # computed slightly more columns than needed
-                break
-        return res
 
     @cached_property
     def w2id(self):

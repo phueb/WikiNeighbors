@@ -8,11 +8,14 @@ dirs = AppDirs(wikineighbors.__name__, wikineighbors.__author__, wikineighbors._
 
 
 class RemoteDirs:
-    research_data = Path(wikineighbors.mnt_point) / 'research_data'
-    if not os.path.ismount(research_data):
-        raise OSError('{} not mounted.'.format(research_data))
+    if wikineighbors.s76:
+        research_data = Path('/') / 'mnt' / 'md0' / 'research_data'
+    else:
+        research_data = Path(wikineighbors.mnt_point) / 'research_data'
+        if not os.path.ismount(research_data):
+            raise OSError('{} not mounted.'.format(research_data))
 
-    runs = research_data / 'CreateWikiCorpus' /'runs'
+    runs = research_data / 'CreateWikiCorpus' / 'runs'
 
 
 class LocalDirs:
