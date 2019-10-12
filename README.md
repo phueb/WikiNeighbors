@@ -20,6 +20,7 @@ The following table shows the time it takes to compute neighbors for 1 word.
 
 ## TODO
 
-* use appdirs to cache pre-built vocabularies for auto-completion
-
+* use sparse format to store co-occurrences beyond 10K vocabulary
+* return similarity value along with neighbor
+* allow user to enter a pair of words and retrieve similarity
 

@@ -8,8 +8,8 @@ import pickle
 from wikineighbors.utils import regex_digit
 
 from wikineighbors.io import Params
-from wikineighbors.exceptions import LudwigVizNoArticlesFound
-from wikineighbors.exceptions import LudwigVizNoVocabFound
+from wikineighbors.exceptions import WikiNeighborsNoArticlesFound
+from wikineighbors.exceptions import WikiNeighborsNoVocabFound
 from wikineighbors.utils import gen_100_param_names, to_param_path
 from wikineighbors import config
 
@@ -62,7 +62,7 @@ class Corpus:
             body_paths = [p for p in param_path.glob('**/bodies.txt')]
             num_bodies = len(body_paths)
             if num_bodies == 0:
-                raise LudwigVizNoArticlesFound(param_path)
+                raise WikiNeighborsNoArticlesFound(param_path)
             elif num_bodies > 1:
                 raise SystemError('Found more than 1 bodies.txt files in {}'.format(param_name))
             else:
@@ -145,12 +145,9 @@ class Corpus:
         print('Making similarity matrix...')
         return cosine_similarity(mat)
 
-    def get_neighbors(self, word):
+    def get_neighbors(self, word, sim_mat):
         if not self.cached_vocab_sizes:
-            raise LudwigVizNoVocabFound(self.name)
-
-        term_by_doc_mat = self.make_mat_with_cached_vocab()  # TODO skip this too by caching sim matrix
-        sim_mat = self.to_sim_mat(term_by_doc_mat)
+            raise WikiNeighborsNoVocabFound(self.name)
 
         print('Computing neighbors...')
         sims = sim_mat[self.w2id[word]]
@@ -195,6 +192,6 @@ class Corpus:
     @cached_property
     def vocab(self):
         if not self.cached_vocab_sizes:
-            raise LudwigVizNoVocabFound(self.name)
+            raise WikiNeighborsNoVocabFound(self.name)
         else:
             return self.load_largest_vocab()

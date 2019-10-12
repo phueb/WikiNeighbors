@@ -28,7 +28,8 @@ class LocalDirs:
 class Default:
     header = 'Corpus ID'
     order = 'descending'
-    text = 'Type a word here'
+    word = 'Type a word here'
+    num_forms = 2
 
 
 class Time:

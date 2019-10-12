@@ -4,10 +4,11 @@ from flask import request
 import argparse
 import socket
 from timeit import default_timer as timer
+from wtforms import Form, StringField
 
 import wikineighbors
-from wikineighbors.exceptions import LudwigVizNoArticlesFound
-from wikineighbors.exceptions import LudwigVizNoVocabFound
+from wikineighbors.exceptions import WikiNeighborsNoArticlesFound
+from wikineighbors.exceptions import WikiNeighborsNoVocabFound
 
 hostname = socket.gethostname()
 
@@ -35,28 +36,6 @@ def home():
                            headers=headers)
 
 
-@app.route('/neighbors/<string:corpus_name>', methods=['GET', 'POST'])
-def neighbors(corpus_name):
-    start = timer()
-    corpus = Corpus(corpus_name)
-
-    results = []
-    for word in session['words']:
-        sorted_neighbors = corpus.get_neighbors(word)
-        top_neighbors = sorted_neighbors[-config.Max.num_neighbors:]
-        results.append('<b>{}:</b> {}'.format(word, ', '.join(top_neighbors)))
-
-    elapsed = timer() - start
-    return render_template('neighbors.html',
-                           topbar_dict=topbar_dict,
-                           corpus_name=corpus_name,
-                           results=results,
-                           num_words=human_format(config.Max.num_words),
-                           num_docs=human_format(config.Max.num_docs),
-                           elapsed=elapsed
-                           )
-
-
 @app.route('/info/<string:corpus_name>', methods=['GET', 'POST'])
 def info(corpus_name):
     corpus = Corpus(corpus_name)
@@ -70,53 +49,24 @@ def info(corpus_name):
                            )
 
 
-# ----------------------------------------------- views with actions
-
-@app.route('/autocomplete/<string:corpus_name>', methods=['GET'])
-def autocomplete(corpus_name):
+@app.route('/query/<string:corpus_name>', defaults={'error': None}, methods=['GET', 'POST'])
+@app.route('/query/<string:corpus_name>/<int:error>', methods=['GET', 'POST'])
+def query(corpus_name, error):
     corpus = Corpus(corpus_name)
-    return jsonify(json_list=corpus.vocab)
-
-
-@app.route('/query/<string:corpus_name>', methods=['GET', 'POST'])
-def query(corpus_name):
-    corpus = Corpus(corpus_name)
+    error_messages = ['Not in vocab' if i == error else ''
+                      for i in range(config.Default.num_forms)]
 
     if not corpus.cached_vocab_sizes:
-        return redirect(url_for('e'))
+        raise WikiNeighborsNoVocabFound
 
-    # form
-    form = make_form(request, corpus)
+    # TODO add a button which adds another form that user can click (multiple times)
 
-    # TODO to use autocomplete AND query multiple words, add a
-    #  button which adds another form that user can click (multiple times)
-
-    # calculate neighbors or return back here
-    if form.validate():
-        words = form.field.data.split()  # TODO only allow a single word per form - string, not list
-        session['words'] = words
-        return redirect(url_for('neighbors', corpus_name=corpus_name))
-    else:
-        return render_template('query.html',
-                               topbar_dict=topbar_dict,
-                               corpus_name=corpus_name,
-                               form=form,
-                               )
-
-
-@app.route('/cache_vocab/<string:corpus_name>', methods=['GET', 'POST'])
-def cache_vocab(corpus_name):
-    corpus = Corpus(corpus_name)
-
-    sizes = request.args.getlist('size')
-    if not sizes:
-        return redirect(url_for('vocab', corpus_name=corpus_name))
-
-    for size in sizes:
-        vocab_size = int(size)
-        corpus.save_vocab_to_disk(vocab_size)
-
-    return redirect(url_for('vocab', corpus_name=corpus_name))
+    return render_template('query.html',
+                           topbar_dict=topbar_dict,
+                           corpus_name=corpus_name,
+                           error_messages=error_messages,
+                           default_word=config.Default.word,
+                           )
 
 
 @app.route('/vocab/<string:corpus_name>', methods=['GET', 'POST'])
@@ -133,10 +83,83 @@ def vocab(corpus_name):
                            cached_vocab_sizes=corpus.cached_vocab_sizes,
                            )
 
+
+@app.route('/neighbors/<string:corpus_name>', methods=['GET', 'POST'])
+def neighbors(corpus_name):
+    start = timer()
+    corpus = Corpus(corpus_name)
+
+    term_by_doc_mat = corpus.make_mat_with_cached_vocab()  # TODO skip this too by caching sim matrix
+    sim_mat = corpus.to_sim_mat(term_by_doc_mat)
+
+    results = []
+    for word in session['validated_words']:
+        sorted_neighbors = corpus.get_neighbors(word, sim_mat)
+        top_neighbors = sorted_neighbors[-config.Max.num_neighbors:]
+        result = '<b>{}:</b> {}'.format(word, ', '.join(top_neighbors))
+        print(result)  # TODO add sim value
+        results.append(result)
+
+    elapsed = timer() - start
+    return render_template('neighbors.html',
+                           topbar_dict=topbar_dict,
+                           corpus_name=corpus_name,
+                           results=results,
+                           num_words=human_format(config.Max.num_words),
+                           num_docs=human_format(config.Max.num_docs),
+                           elapsed=elapsed
+                           )
+
+# ----------------------------------------------- non-views
+
+
+@app.route('/autocomplete/<string:corpus_name>', methods=['GET'])
+def autocomplete(corpus_name):
+    corpus = Corpus(corpus_name)
+    return jsonify(json_list=corpus.vocab)
+
+
+@app.route('/validate/<string:corpus_name>', methods=['GET', 'POST'])
+def validate(corpus_name):
+    corpus = Corpus(corpus_name)
+
+    words = request.args.getlist('word')
+    if not words:
+        return 'Did not find words'
+
+    validated_words = []
+    for n, word in enumerate(words):
+        if word == config.Default.word:
+            continue
+        elif word not in corpus.vocab:
+            return redirect(url_for('query', corpus_name=corpus_name, error=n))
+        else:
+            validated_words.append(word)
+
+    session['validated_words'] = validated_words
+    return redirect(url_for('neighbors', corpus_name=corpus_name))
+
+
+@app.route('/cache_vocab/<string:corpus_name>', methods=['GET', 'POST'])
+def cache_vocab(corpus_name):
+    corpus = Corpus(corpus_name)
+
+    sizes = request.args.getlist('size')
+    if not sizes:
+        return render_template('error.html',
+                               message='No vocabulary size selected',
+                               status_code=500,
+                               topbar_dict=topbar_dict)
+
+    for size in sizes:
+        vocab_size = int(size)
+        corpus.save_vocab_to_disk(vocab_size)
+    return redirect(url_for('vocab', corpus_name=corpus_name))
+
 # -------------------------------------------- error handling
 
 
-@app.errorhandler(LudwigVizNoArticlesFound)
+@app.errorhandler(WikiNeighborsNoArticlesFound)
 def handler(exception):
     return render_template('error.html',
                            message=exception.message,
@@ -144,7 +167,7 @@ def handler(exception):
                            topbar_dict=topbar_dict)
 
 
-@app.errorhandler(LudwigVizNoVocabFound)
+@app.errorhandler(WikiNeighborsNoVocabFound)
 def handler(exception):
     return render_template('error.html',
                            message=exception.message,
@@ -189,8 +212,11 @@ if __name__ == "__main__":  # pycharm does not use this
     from wikineighbors.io import make_corpus_headers_and_rows
     from wikineighbors.utils import sort_rows
     from wikineighbors.utils import human_format
-    from wikineighbors.form import make_form
     from wikineighbors.corpus import Corpus
+
+    class WordInputForm(Form):
+        word = StringField()
+        msg = ''
 
     topbar_dict = {'listing': config.RemoteDirs.research_data,
                    'hostname': hostname,
