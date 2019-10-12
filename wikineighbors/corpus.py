@@ -7,7 +7,7 @@ from timeit import default_timer as timer
 import pickle
 from wikineighbors.utils import regex_digit
 
-from wikineighbors.io import Params
+from wikineighbors.params import Params
 from wikineighbors.exceptions import WikiNeighborsNoArticlesFound
 from wikineighbors.exceptions import WikiNeighborsNoVocabFound
 from wikineighbors.utils import gen_100_param_names, to_param_path
@@ -23,7 +23,6 @@ class Corpus:
 
     def __init__(self, name):
         self.name = name
-        self.param_names = self.get_param_names()
         self.cache_path = config.LocalDirs.cache / name
         self.file_name_template = 'vocab_{}.pkl'
 
@@ -33,7 +32,8 @@ class Corpus:
     def num_param_names(self):
         return len(self.param_names)
 
-    def get_param_names(self):
+    @cached_property
+    def param_names(self):
         param_names = []
         parts = set()
         for param_name in gen_100_param_names(self.name):

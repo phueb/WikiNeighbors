@@ -1,45 +1,10 @@
-import yaml
-
 from wikineighbors import config
+from wikineighbors.params import Params
 from wikineighbors.utils import get_id_as_int, get_time_modified, count_replications
+from wikineighbors.corpus import Corpus
 
 
-class Params:
-
-    def __init__(self, params_path):
-
-        with (params_path / 'param2val.yaml').open('r') as f:
-            param2val = yaml.load(f, Loader=yaml.FullLoader)
-
-        self.param_name = param2val.pop('param_name')
-        self.job_name = param2val.pop('job_name')
-
-        self.param2val = param2val
-
-        self.stripped_param2val = self.make_stripped()
-
-    def make_stripped(self):
-        """
-        return self.param2val but with "part" removed
-        """
-        res = self.param2val.copy()
-        res.pop('part')
-        return res
-
-    def __getattr__(self, name):
-        if name in self.param2val:
-            return self.param2val[name]
-        else:
-            raise AttributeError('No such attribute')
-
-    def __str__(self):
-        res = ''
-        for k, v in sorted(self.stripped_param2val.items()):
-            res += '<p style="margin-bottom: 0px">{}={}</p>'.format(k, v)
-        return res
-
-
-def make_corpus_headers_and_rows():
+def make_home_data():
     """
     make a row for each corpus - an abstraction over possibly many parameter configurations
     because a corpus is typically created in parallel on multiple machines, producing multiple bodies.txt files.
@@ -48,6 +13,7 @@ def make_corpus_headers_and_rows():
     to achieve this, param_name folders must be iterated over in order (param_1, param2, ...)
     """
     stripped_param2vals = []
+    _buttons = ['info', 'vocab', 'query']  # careful, these must also be names of URLS
     headers = ['Corpus ID', 'Last modified']
     rows = []
     all_param_paths = config.RemoteDirs.runs.glob('param*')
@@ -58,17 +24,22 @@ def make_corpus_headers_and_rows():
         if params.stripped_param2val not in stripped_param2vals:  # lets through only a new corpus
             param_id = get_id_as_int(p.name)
             corpus_name = 'Corpus-{}'.format(param_id)
+            corpus = Corpus(corpus_name)
+            buttons = _buttons[:] if corpus.cached_vocab_sizes else _buttons[:-1]
             row = {headers[0]: param_id,
                    headers[1]: get_time_modified(p),
                    # used, but not displayed in table
                    'corpus_name': corpus_name,
                    'tooltip': params,
+                   #
+                   'buttons': buttons
                    }
+
             assert count_replications(p.name) == 1
             rows.append(row)
 
         stripped_param2vals.append(params.stripped_param2val)
 
-    return headers, rows
+    return headers, rows, _buttons
 
 

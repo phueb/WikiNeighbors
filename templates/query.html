@@ -7,7 +7,7 @@
 
     </div>
     <div class="mdl-card__actions mdl-card--border">
-        <a href="{{ url_for('neighbors', corpus_name=corpus_name) }}"
+        <a href="{{ url_for('query', corpus_name=corpus_name) }}"
            class="mdl-button">Re-load</a>
         <a href="{{ url_for('query', corpus_name=corpus_name) }}"
            class="mdl-button">Back</a>
@@ -18,29 +18,37 @@
 {% block ludwigviz_middle %}
 
     <form action="{{ url_for('validate', corpus_name=corpus_name) }}">
-        <div class="mdl-card__supporting-text">
+        <div class="mdl-card__supporting-text" id="fields-div">
 
-            {%  for msg in error_messages %}
+            {%  for word, msg in fields %}
                 <div class="mdl-textfield mdl-js-textfield ">
-                    <label class="mdl-textfield__label" for="field_id{{ loop.index0 }}"></label>
                     <input class="mdl-textfield__input"
                            id="field_id{{ loop.index0 }}"
                            name="word"
                            type="text"
-                           value="{{ default_word }}">
-                    <span class="mdl-textfield__error">{{ msg }}</span>
+                           value="{{ word }}">
+                    <label class="mdl-textfield__label" for="field_id{{ loop.index0 }}">
+                        Word {{ loop.index }}
+                    </label>
+                    <span class="mdl-textfield__error" style="visibility: visible">{{ msg }}</span>
                 </div>
                 <div class="mdl-layout-spacer"></div>
             {% endfor %}
-
         </div>
 
-
+        <div class="mdl-card__supporting-text" id="fields-div">
+            <span class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored"
+                  id ="field-adder">
+                <i class="material-icons">add</i>
+            </span>
+        </div>
 
         <div class="mdl-card__actions mdl-card--border">
-            <input type="submit" name="get_neighbors" class="mdl-button" value="get neighbors">
+            <input type="submit" name="get_neighbors" class="mdl-button trigger-loading" value="get neighbors">
         </div>
     </form>
+
+
 
     <script type='text/javascript'>
         $(document).ready(function() {
@@ -51,6 +59,11 @@
                         minLength: 2
                     });
                 });
+
+            $('#field-adder').click(function () {
+                $('#fields-div').append('Hey!')
+            })
+
         });
     </script>
 {% endblock %}

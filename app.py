@@ -19,14 +19,12 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
-    headers, rows = make_corpus_headers_and_rows()  # returns 1 row per corpus not per param_name
+    headers, rows, buttons = make_home_data()  # returns 1 row per corpus not per param_name
     # sort
     if rows:
         header = request.args.get('header') or config.Default.header
         order = request.args.get('order') or config.Default.order
         rows = sort_rows(rows, header, order)
-
-    buttons = ['query', 'info', 'vocab']  # careful, these must also be names of URLS
 
     return render_template('home.html',
                            topbar_dict=topbar_dict,
@@ -42,19 +40,24 @@ def info(corpus_name):
 
     return render_template('info.html',
                            topbar_dict=topbar_dict,
-                           param_names=corpus.param_names,
                            corpus_name=corpus_name,
                            num_param_names=corpus.num_param_names,
                            paths_to_txt_files=corpus.txt_paths
                            )
 
 
-@app.route('/query/<string:corpus_name>', defaults={'error': None}, methods=['GET', 'POST'])
-@app.route('/query/<string:corpus_name>/<int:error>', methods=['GET', 'POST'])
-def query(corpus_name, error):
+@app.route('/query/<string:corpus_name>', methods=['GET', 'POST'])
+def query(corpus_name):
     corpus = Corpus(corpus_name)
-    error_messages = ['Not in vocab' if i == error else ''
-                      for i in range(config.Default.num_forms)]
+    # session.clear()
+
+    if not session.get('error_messages', []):
+        error_message = ''
+        fields = [(config.Default.word, error_message)
+                  for _ in range(config.Default.num_fields)]
+    else:
+        fields = [(word, error_message)
+                  for word, error_message in zip(session['words'], session['error_messages'])]
 
     if not corpus.cached_vocab_sizes:
         raise WikiNeighborsNoVocabFound
@@ -64,8 +67,7 @@ def query(corpus_name, error):
     return render_template('query.html',
                            topbar_dict=topbar_dict,
                            corpus_name=corpus_name,
-                           error_messages=error_messages,
-                           default_word=config.Default.word,
+                           fields=fields,
                            )
 
 
@@ -77,7 +79,6 @@ def vocab(corpus_name):
                             if s not in corpus.cached_vocab_sizes]
     return render_template('vocab.html',
                            topbar_dict=topbar_dict,
-                           param_names=corpus.param_names,
                            corpus_name=corpus_name,
                            uncached_vocab_sizes=uncached_vocab_sizes,
                            cached_vocab_sizes=corpus.cached_vocab_sizes,
@@ -122,22 +123,29 @@ def autocomplete(corpus_name):
 @app.route('/validate/<string:corpus_name>', methods=['GET', 'POST'])
 def validate(corpus_name):
     corpus = Corpus(corpus_name)
+    err_message = 'Not in vocab'
 
-    words = request.args.getlist('word')
-    if not words:
-        return 'Did not find words'
-
-    validated_words = []
+    words = session['words'] = request.args.getlist('word')
+    session['validated_words'] = []
+    session['error_messages'] = []
     for n, word in enumerate(words):
         if word == config.Default.word:
-            continue
+            session['error_messages'].append('')
         elif word not in corpus.vocab:
-            return redirect(url_for('query', corpus_name=corpus_name, error=n))
+            session['error_messages'].append(err_message)
         else:
-            validated_words.append(word)
+            session['error_messages'].append('')
+            session['validated_words'].append(word)
 
-    session['validated_words'] = validated_words
-    return redirect(url_for('neighbors', corpus_name=corpus_name))
+    if err_message in session['error_messages']:
+        return redirect(url_for('query', corpus_name=corpus_name))
+    else:
+        return redirect(url_for('neighbors', corpus_name=corpus_name))
+
+
+@app.route('/add_field/<string:corpus_name>', methods=['GET'])
+def add_field(corpus_name):
+    raise NotImplementedError  # TODO implement
 
 
 @app.route('/cache_vocab/<string:corpus_name>', methods=['GET', 'POST'])
@@ -209,7 +217,7 @@ if __name__ == "__main__":  # pycharm does not use this
     # import after setting s76
 
     from wikineighbors import config
-    from wikineighbors.io import make_corpus_headers_and_rows
+    from wikineighbors.io import make_home_data
     from wikineighbors.utils import sort_rows
     from wikineighbors.utils import human_format
     from wikineighbors.corpus import Corpus
