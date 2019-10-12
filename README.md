@@ -1,5 +1,7 @@
 # WikiNeighbors
 
+![Example Screenshot](example.png)
+
 Show neighbors in Wikipedia co-occurrence space via browser app
 
 ## Performance
