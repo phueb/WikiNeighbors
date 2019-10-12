@@ -6,7 +6,7 @@ Show neighbors in Wikipedia co-occurrence space via browser app
 
 ## Performance
 
-The following table shows the time it takes to compute neighbors for 1 word.
+The following table shows the time it takes to compute a similarity matrix.
 
 * number of words = 10K
 * number of documents = 10K

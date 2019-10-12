@@ -24,7 +24,10 @@ class Corpus:
     def __init__(self, name):
         self.name = name
         self.cache_path = config.LocalDirs.cache / name
-        self.file_name_template = 'vocab_{}.pkl'
+        self.vocab_file_name_template = 'vocab_{}.pkl'
+        self.sim_mat_file_name_template = 'sim_mat_{}.pkl'
+        if not self.cache_path.is_dir():
+            self.cache_path.mkdir(parents=True)
 
     # ------------------------------------------------ basic info
 
@@ -72,67 +75,35 @@ class Corpus:
 
     # --------------------------------------------------- counting words
 
-    @staticmethod
-    def make_doc_vectors(p, stop_num, vocab):
-        print('Starting worker')
-        res = []
-        with p.open('r') as f:
-            for n, doc in enumerate(f):  # lazy generator
-                words = doc.split()
-                w2df = Counter(words)
-
-                doc_vector = [w2df[w] for w in vocab]
-                res.append(doc_vector)
-
-                if n == stop_num:
-                    print('Stopping worker after:', n)
-                    return res
-
-    def make_mat_with_cached_vocab(self):
-        print('Counting words in documents...')
-        start = timer()
-
-        txt_paths = self.txt_paths[:]  # small benefit for multiprocessing: 16 vs. 28 seconds
-
-        num_workers = len(txt_paths)
-        vocab = self.vocab
-        num_docs_per_worker = config.Max.num_docs // num_workers
-        pool = Pool(num_workers)
-        chunks = pool.starmap(self.make_doc_vectors,
-                              [(p, num_docs_per_worker, vocab)
-                               for p in txt_paths])
-        pool.close()
-        pool.join()
-
-        print('Took {} secs to make document vectors '.format(
-            timer() - start))
-
-        # chunks is a list of chunks,
-        # where each chunk is a list, that contains doc vectors (lists also)
-        mat = np.concatenate(chunks).T
-
-        print('Took {} secs to make term-by-window matrix of size {}'.format(
-            timer() - start, mat.shape))
-        return mat
-
-    def make_w2cf(self):
-        print('Counting all words in {} docs...'.format(config.Max.num_docs))
-        start = timer()
-        res = Counter()
-        n = 0
+    def gen_docs(self):
         for p in self.txt_paths:
             with p.open('r') as f:  # it takes 8 seconds no matter how many processes due to network read
                 for doc in f:  # lazy generator
-                    words = doc.split()
-                    w2df = Counter(words)
-                    res.update(w2df)  # frequencies are incremented rather than replaced
-                    if n == config.Max.num_docs:
-                        break
-                    n += 1
+                    yield doc
+
+    def make_counts(self):
+        print('Counting all words in {} docs...'.format(config.Max.num_docs))
+        start = timer()
+        w2cf = Counter()
+        w2dfs = []
+        n = 0
+        for doc in self.gen_docs():
+            words = doc.split()
+            if not words:
+                print('WARNING: No words found')
+                continue
+
+            w2df = Counter(words)
+            w2dfs.append(w2df)
+            w2cf.update(w2df)  # frequencies are incremented rather than replaced
+
+            n += 1
+            if n == config.Max.num_docs:
+                break
 
         print('Took {} secs to count all words in {} docs in 1 process'.format(
             timer() - start, config.Max.num_docs))
-        return res
+        return w2cf, w2dfs
 
     # ------------------------------------------------------------ neighbors
 
@@ -140,50 +111,55 @@ class Corpus:
     def w2id(self):
         return {w: i for i, w in enumerate(self.vocab)}
 
-    @staticmethod
-    def to_sim_mat(mat):
-        print('Making similarity matrix...')
-        return cosine_similarity(mat)
-
-    def get_neighbors(self, word, sim_mat):
+    def get_neighbors(self, word):
         if not self.cached_vocab_sizes:
             raise WikiNeighborsNoVocabFound(self.name)
 
         print('Computing neighbors...')
-        sims = sim_mat[self.w2id[word]]
+        sims = self.sim_mat[self.w2id[word]]
         neighbors = [n for n in sorted(self.vocab, key=lambda w: sims[self.w2id[w]])
                      if n != word]
         return neighbors
 
     # --------------------------------------------------- i/o
 
-    def save_vocab_to_disk(self, size):
-        vocab = self.make_vocab(size)
+    def save_to_disk(self, size):
+        # make vocab + sim mat
+        w2cf, w2dfs = self.make_counts()
+        vocab = self.make_vocab(w2cf, size)
 
-        if not self.cache_path.is_dir():
-            self.cache_path.mkdir(parents=True)
-        with (self.cache_path / self.file_name_template.format(size)).open('wb') as f:
+        assert len(w2dfs) == config.Max.num_docs
+        if not len(vocab) == config.Max.num_words:
+            raise RuntimeError('Did not find enough vocab words.'
+                               ' Try setting number of documents higher')
+        sim_mat = self.make_sim_mat(w2dfs, vocab)
+
+        with (self.cache_path / self.vocab_file_name_template.format(size)).open('wb') as f:
             pickle.dump(vocab, f)
         print('Saved vocab to {}'.format(config.LocalDirs.cache))
 
+        with (self.cache_path / self.sim_mat_file_name_template.format(size)).open('wb') as f:
+            pickle.dump(sim_mat, f)
+        print('Saved sim_mat to {}'.format(config.LocalDirs.cache))
+
     # ----------------------------------------------------- vocab
 
-    def make_vocab(self, size):
+    @staticmethod
+    def make_vocab(w2cf, size):
         print('Making vocab...')
-        w2cf = self.make_w2cf()
         return [w for w, f in sorted(w2cf.most_common(size))]
 
     @cached_property
     def cached_vocab_sizes(self):
         sizes = []
-        for p in self.cache_path.glob('*.pkl'):
+        for p in self.cache_path.glob('vocab_*.pkl'):
             size = int(regex_digit.search(p.name).group())
             sizes.append(size)
         return sorted(sizes)
 
     def load_largest_vocab(self):
         largest_size = self.cached_vocab_sizes[-1]
-        file_name = self.file_name_template = 'vocab_{}.pkl'.format(largest_size)
+        file_name = self.vocab_file_name_template.format(largest_size)
         with (self.cache_path / file_name).open('rb') as f:
             res = pickle.load(f)
         assert len(res) == largest_size
@@ -195,3 +171,32 @@ class Corpus:
             raise WikiNeighborsNoVocabFound(self.name)
         else:
             return self.load_largest_vocab()
+
+    # --------------------------------------------------- sim mat
+
+    @staticmethod
+    def make_sim_mat(w2dfs, vocab):  # TODO this may benefit from multiprocessing
+        print('Making term-by-doc matrix...')
+        term_by_doc_mat = np.zeros((config.Max.num_words, config.Max.num_docs))
+        for col_id, w2df in enumerate(w2dfs):
+            try:
+                term_by_doc_mat[:, col_id] = [w2df[w] for w in vocab]
+            except IndexError:
+                print(col_id)
+        print('Done')
+        return cosine_similarity(term_by_doc_mat)
+
+    def load_largest_sim_mat(self):
+        largest_size = self.cached_vocab_sizes[-1]
+        file_name = self.sim_mat_file_name_template.format(largest_size)
+        with (self.cache_path / file_name).open('rb') as f:
+            res = pickle.load(f)
+        assert len(res) == largest_size
+        return res
+
+    @cached_property
+    def sim_mat(self):
+        if not self.cached_vocab_sizes:
+            raise WikiNeighborsNoVocabFound(self.name)
+        else:
+            return self.load_largest_sim_mat()

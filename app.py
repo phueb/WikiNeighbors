@@ -83,12 +83,9 @@ def neighbors(corpus_name):
     start = timer()
     corpus = Corpus(corpus_name)
 
-    term_by_doc_mat = corpus.make_mat_with_cached_vocab()  # TODO skip this too by caching sim matrix
-    sim_mat = corpus.to_sim_mat(term_by_doc_mat)
-
     results = []
     for word in session['validated_words']:
-        sorted_neighbors = corpus.get_neighbors(word, sim_mat)
+        sorted_neighbors = corpus.get_neighbors(word)
         top_neighbors = sorted_neighbors[-config.Max.num_neighbors:]
         result = '<b>{}:</b> {}'.format(word, ', '.join(top_neighbors))
         print(result)  # TODO add sim value
@@ -149,7 +146,7 @@ def cache_vocab(corpus_name):
 
     for size in sizes:
         vocab_size = int(size)
-        corpus.save_vocab_to_disk(vocab_size)
+        corpus.save_to_disk(vocab_size)  # saves vocab + sim mat
     return redirect(url_for('vocab', corpus_name=corpus_name))
 
 # -------------------------------------------- error handling
