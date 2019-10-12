@@ -30,7 +30,7 @@
     </div>
     <script type='text/javascript'>
         $(document).ready(function() {
-            $.ajax({url: '{{ url_for("autocomplete") }}'}).done(
+            $.ajax({url: '{{ url_for("autocomplete", corpus_name=corpus_name) }}'}).done(
                 function (data) {
                     $('#field').autocomplete({
                         source: data.json_list,

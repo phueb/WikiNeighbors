@@ -25,8 +25,7 @@
                 </thead>
                 <tbody>
                 {% for row in rows %}
-                    <tr data-href='{{ url_for('query', corpus_name=row.corpus_name) }}'
-                        id="tooltip_id{{ loop.index0 }}">
+                    <tr>
                         {% for k in headers %}
                             <td class="mdl-data-table__cell--non-numeric">
                                 {{ row[k] }}
@@ -56,27 +55,30 @@
 {% endblock %}
 
 {% block ludwigviz_middle %}
-    <form action="{{ url_for('home', project_name=project_name) }}" id="form-group"></form>
+    <form action="{{ url_for('home', project_name=project_name) }}" id="form-reorder"></form>
 
     <div class="mdl-card__supporting-text">
+        <p>Order by:</p>
         {% for header in headers %}
-            <label for="header_id{{ loop.index0 }}" class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect">
-                <input type="checkbox"
+            <label for="header_id{{ loop.index0 }}" class="mdl-radio mdl-js-radio mdl-js-ripple-effect">
+                <input type="radio"
                        name="header"
                        id="header_id{{ loop.index0 }}"
-                       class="mdl-checkbox__input"
-                       value="{{ header }}" form="form-group">
-                <span class="mdl-checkbox__label">{{ header }}</span>
+                       class="mdl-radio__button"
+                       value="{{ header }}" form="form-reorder">
+                <span class="mdl-radio__label">{{ header }}</span>
             </label>
         {% endfor %}
-
+    </div>
+    <div class="mdl-card__supporting-text">
+    <p>Direction:</p>
         {% for order in ['ascending', 'descending'] %}
             <label for="order_id{{ loop.index0 }}" class="mdl-radio mdl-js-radio mdl-js-ripple-effect inline-radio">
                 <input type="radio"
                        name="order"
                        id="order_id{{ loop.index0 }}"
                        class="mdl-radio__button"
-                       value="{{ order }}" form="form-group">
+                       value="{{ order }}" form="form-reorder">
                 <span class="mdl-radio__label">{{ order }}</span>
             </label>
         {% endfor %}
@@ -84,7 +86,7 @@
     </div>
 
     <div class="mdl-card__actions mdl-card--border">
-        <input type="submit" name="reorder" class="mdl-button" value="Re-order" form="form-group">
+        <input type="submit" name="reorder" class="mdl-button" value="Re-order" form="form-reorder">
     </div>
 
 {% endblock %}

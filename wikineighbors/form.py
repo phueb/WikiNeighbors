@@ -13,7 +13,7 @@ def make_form(request, corpus):
 
     # request.args only if first attempt did not result in validation
     else:
-        valid_set = corpus.make_vocab
+        valid_set = corpus.vocab
         message = 'Not in vocabulary'
 
     def validator(_, field):
@@ -28,7 +28,6 @@ def make_form(request, corpus):
 
     class WordInputForm(Form):
         field = StringField(validators=[validator])
-        valid_type = ''
 
     form = WordInputForm(request.args, field=config.Default.text)
     return form

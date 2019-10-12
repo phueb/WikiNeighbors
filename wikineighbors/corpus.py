@@ -3,11 +3,14 @@ import numpy as np
 from collections import Counter
 from stop_words import get_stop_words
 from sklearn.metrics.pairwise import cosine_similarity
-from multiprocessing import Queue, cpu_count, Process, Manager
+from multiprocessing import Pool
 from timeit import default_timer as timer
+import pickle
+from wikineighbors.utils import regex_digit
 
 from wikineighbors.io import Params
 from wikineighbors.exceptions import LudwigVizNoArticlesFound
+from wikineighbors.exceptions import LudwigVizNoVocabFound
 from wikineighbors.utils import gen_100_param_names, to_param_path
 from wikineighbors import config
 
@@ -20,10 +23,13 @@ class Corpus:
     contains info about text file locations on shared drive
     """
 
-    def __init__(self, name, vocab=None):
+    def __init__(self, name):
         self.name = name
         self.param_names = self.get_param_names()
-        self._vocab = vocab
+        self.cache_path = config.LocalDirs.cache / name
+        self.file_name_template = 'vocab_{}.pkl'
+
+    # ------------------------------------------------ basic info
 
     @cached_property
     def num_param_names(self):
@@ -66,84 +72,86 @@ class Corpus:
 
         return res
 
-    def gen_docs(self):
-        for p in self.txt_paths:
-            with p.open('r') as f:
-                for doc in f:  # lazy generator
-                    yield doc
+    # --------------------------------------------------- counting words
 
     @staticmethod
-    def count_process(jobs_queue: Queue, shared_list):
-        while True:
-            doc = jobs_queue.get()
-            if doc:
-                words = [w for w in doc.split() if w not in stop_words]
+    def count_process(p, stop_num, vocab):
+        print('Starting worker')
+        res = []
+        with p.open('r') as f:
+            for n, doc in enumerate(f):  # lazy generator
+                words = doc.split()
                 w2df = Counter(words)
-                shared_list.append(w2df)
-            else:
-                break
 
-    def make_w2dfs(self):
+                doc_vector = [w2df[w] for w in vocab]
+                res.append(doc_vector)
+
+                if n == stop_num:
+                    print('Stopping worker after:', n)
+                    return res
+
+    def make_mat_with_cached_vocab(self):  # TODO threading? asyncio? - multiprocessing doesn't help
         print('Counting words in documents...')
         start = timer()
 
-        manager = Manager()
-        shared_list = manager.list()  # TODO as currently implemented, multiprocessing only saves 1 sec
+        txt_paths = self.txt_paths[:]  # small benefit for multiprocessing: 16 vs. 28 seconds
 
-        workers = []
-        worker_count = config.Corpus.worker_count or max(1, cpu_count() - 1)
-        docs_queue = Queue(maxsize=10 * worker_count)
-        for i in range(worker_count):
-            counter = Process(target=self.count_process,
-                              args=(docs_queue, shared_list))
-            counter.daemon = True  # only live while parent process lives
-            counter.start()
-            workers.append(counter)
+        num_workers = len(txt_paths)
+        vocab = self.vocab
+        num_docs_per_worker = config.Max.num_docs // num_workers
+        pool = Pool(num_workers)
+        chunks = pool.starmap(self.count_process,
+                              [(p, num_docs_per_worker, vocab)
+                               for p in txt_paths])
+        pool.close()
+        pool.join()
 
-        # add docs to queue
-        num_docs = 0
-        for doc in self.gen_docs():
-            docs_queue.put(doc)  # goes to any available extract_process
-            num_docs += 1
-            if num_docs == config.Max.num_docs:
-                break
+        print('Took {} secs to make document vectors '.format(
+            timer() - start))
 
-        # signal termination
-        for _ in workers:
-            docs_queue.put(None)
-        # wait for workers to terminate
-        for w in workers:
-            w.join()
+        # chunks is a list of chunks,
+        # where each chunk is a list, that contains doc vectors (lists also)
+        mat = np.concatenate(chunks).T
 
-        print('Took {} secs'.format(timer() - start))
-        return shared_list
+        print('Took {} secs to make term-by-window matrix of size {}'.format(
+            timer() - start, mat.shape))
+        return mat
 
-    @staticmethod
-    def make_w2f(w2dfs):
-        print('Counting all words...')
+    def make_w2cf(self):
+        print('Counting all words in {} docs...'.format(config.Max.num_docs))
+        start = timer()
         res = Counter()
-        for w2df in w2dfs:
-            res.update(w2df)  # frequencies are incremented rather than replaced
+        n = 0
+        for p in self.txt_paths:
+            with p.open('r') as f:  # it takes 8 seconds no matter how many processes due to network read
+                for doc in f:  # lazy generator
+                    words = doc.split()
+                    w2df = Counter(words)
+                    res.update(w2df)  # frequencies are incremented rather than replaced
+                    if n == config.Max.num_docs:
+                        break
+                    n += 1
+
+        print('Took {} secs to count all words in {} docs in 1 process'.format(
+            timer() - start, config.Max.num_docs))
         return res
 
-    @staticmethod
-    def make_w2id(vocab):
-        return {w: i for i, w in enumerate(vocab)}
-
-    def make_vocab(self, w2f):
-        print('Making vocab...')
-        if self._vocab:
-            return self._vocab
-        else:
-            return [w for w, f in sorted(w2f.most_common(config.Max.num_words))]
+    # ------------------------------------------------------------ neighbors
 
     @staticmethod
-    def make_term_by_doc_mat(vocab, w2dfs):  # TODO slow - add multiprocessing here
+    def make_term_by_doc_mat(vocab, w2dfs):
         print('Making term-by-window matrix...')
         res = np.zeros((config.Max.num_words, config.Max.num_docs))
         for col_id, w2df in enumerate(w2dfs):
-            res[:, col_id] = [w2df[w] for w in vocab]
+            try:
+                res[:, col_id] = [w2df[w] for w in vocab]
+            except IndexError:  # computed slightly more columns than needed
+                break
         return res
+
+    @cached_property
+    def w2id(self):
+        return {w: i for i, w in enumerate(self.vocab)}
 
     @staticmethod
     def to_sim_mat(mat):
@@ -151,14 +159,55 @@ class Corpus:
         return cosine_similarity(mat)
 
     def get_neighbors(self, word):
+        if not self.cached_vocab_sizes:
+            raise LudwigVizNoVocabFound(self.name)
 
-        w2dfs = self.make_w2dfs()
-        w2f = self.make_w2f(w2dfs)
-        vocab = self.make_vocab(w2f)
-        w2id = self.make_w2id(vocab)
-        term_by_doc_mat = self.make_term_by_doc_mat(vocab, w2dfs)
+        term_by_doc_mat = self.make_mat_with_cached_vocab()  # TODO skip this too by caching sim matrix
         sim_mat = self.to_sim_mat(term_by_doc_mat)
 
         print('Computing neighbors...')
-        sims = sim_mat[w2id[word]]
-        return sorted(vocab, key=lambda w: sims[w2id[w]])
+        sims = sim_mat[self.w2id[word]]
+        neighbors = [n for n in sorted(self.vocab, key=lambda w: sims[self.w2id[w]])
+                     if n != word]
+        return neighbors
+
+    # --------------------------------------------------- i/o
+
+    def save_vocab_to_disk(self, size):
+        vocab = self.make_vocab(size)
+
+        if not self.cache_path.is_dir():
+            self.cache_path.mkdir(parents=True)
+        with (self.cache_path / self.file_name_template.format(size)).open('wb') as f:
+            pickle.dump(vocab, f)
+        print('Saved vocab to {}'.format(config.LocalDirs.cache))
+
+    # ----------------------------------------------------- vocab
+
+    def make_vocab(self, size):
+        print('Making vocab...')
+        w2cf = self.make_w2cf()
+        return [w for w, f in sorted(w2cf.most_common(size))]
+
+    @cached_property
+    def cached_vocab_sizes(self):
+        sizes = []
+        for p in self.cache_path.glob('*.pkl'):
+            size = int(regex_digit.search(p.name).group())
+            sizes.append(size)
+        return sorted(sizes)
+
+    def load_largest_vocab(self):
+        largest_size = self.cached_vocab_sizes[-1]
+        file_name = self.file_name_template = 'vocab_{}.pkl'.format(largest_size)
+        with (self.cache_path / file_name).open('rb') as f:
+            res = pickle.load(f)
+        assert len(res) == largest_size
+        return res
+
+    @cached_property
+    def vocab(self):
+        if not self.cached_vocab_sizes:
+            raise LudwigVizNoVocabFound(self.name)
+        else:
+            return self.load_largest_vocab()

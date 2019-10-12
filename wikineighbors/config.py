@@ -1,11 +1,14 @@
 from pathlib import Path
 import os
+from appdirs import AppDirs
 
-from wikineighbors import mnt_point
+import wikineighbors
+
+dirs = AppDirs(wikineighbors.__name__, wikineighbors.__author__, wikineighbors.__version__)
 
 
 class RemoteDirs:
-    research_data = Path(mnt_point) / 'research_data'
+    research_data = Path(wikineighbors.mnt_point) / 'research_data'
     if not os.path.ismount(research_data):
         raise OSError('{} not mounted.'.format(research_data))
 
@@ -16,7 +19,7 @@ class LocalDirs:
     root = Path(__file__).parent.parent
     src = root / 'wikineighbors'
     static = root / 'static'
-    templates = root / 'templates'
+    cache = Path(dirs.user_cache_dir)  # TODO use for caching wiki data
 
 
 class Default:
@@ -36,4 +39,7 @@ class Max:
 
 
 class Corpus:
-    worker_count = 2
+    worker_count = 4
+    vocab_sizes = [100,
+                   1000,
+                   10000]

@@ -3,11 +3,11 @@ from flask import render_template
 from flask import request
 import argparse
 import socket
-from appdirs import AppDirs
 from timeit import default_timer as timer
 
 import wikineighbors
 from wikineighbors.exceptions import LudwigVizNoArticlesFound
+from wikineighbors.exceptions import LudwigVizNoVocabFound
 from wikineighbors import config
 from wikineighbors.io import make_corpus_headers_and_rows
 from wikineighbors.utils import sort_rows
@@ -19,11 +19,8 @@ hostname = socket.gethostname()
 
 app = Flask(__name__)
 
-dirs = AppDirs(wikineighbors.__name__, wikineighbors.__author__, wikineighbors.__version__)
-user_cache_dir = dirs.user_cache_dir  # TODO use for caching wiki data
 
 # ------------------------------------------------ views
-
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -34,7 +31,7 @@ def home():
         order = request.args.get('order') or config.Default.order
         rows = sort_rows(rows, header, order)
 
-    buttons = ['query', 'info']  # careful, these must also be names of URLS
+    buttons = ['query', 'info', 'vocab']  # careful, these must also be names of URLS
 
     return render_template('home.html',
                            topbar_dict=topbar_dict,
@@ -79,19 +76,23 @@ def info(corpus_name):
                            )
 
 
-# ----------------------------------------------- text field
+# ----------------------------------------------- views with actions
 
-@app.route('/autocomplete/', methods=['GET'])
-def autocomplete():
+@app.route('/autocomplete/<string:corpus_name>', methods=['GET'])
+def autocomplete(corpus_name):
+    corpus = Corpus(corpus_name)
 
-    # TODO cookie limit is 4093 bytes - so this needs to be pre-generated (in cache)
+    # TODO or load all vocabs in when app starts?
 
-    return jsonify(json_list=session['vocab'])
+    return jsonify(json_list=corpus.vocab)
 
 
-@app.route('/query/<string:corpus_name>/', methods=['GET', 'POST'])
+@app.route('/query/<string:corpus_name>', methods=['GET', 'POST'])
 def query(corpus_name):
     corpus = Corpus(corpus_name)
+
+    if not corpus.cached_vocab_sizes:
+        return redirect(url_for('e'))
 
     # form
     form = make_form(request, corpus)
@@ -100,9 +101,6 @@ def query(corpus_name):
     #  button which adds another form that user can click (multiple times)
 
     # TODO is running app on server faster?
-
-    # autocomplete
-    session['vocab'] = []  # TODO limit is 4093 bytes - don't use it
 
     # calculate neighbors or return back here
     if form.validate():
@@ -116,16 +114,53 @@ def query(corpus_name):
                                form=form,
                                )
 
+
+@app.route('/cache_vocab/<string:corpus_name>', methods=['GET', 'POST'])
+def cache_vocab(corpus_name):
+    corpus = Corpus(corpus_name)
+
+    sizes = request.args.getlist('size')
+    if not sizes:
+        return redirect(url_for('vocab', corpus_name=corpus_name))
+
+    for size in sizes:
+        vocab_size = int(size)
+        corpus.save_vocab_to_disk(vocab_size)
+
+    return redirect(url_for('vocab', corpus_name=corpus_name))
+
+
+@app.route('/vocab/<string:corpus_name>', methods=['GET', 'POST'])
+def vocab(corpus_name):
+    corpus = Corpus(corpus_name)
+
+    uncached_vocab_sizes = [s for s in config.Corpus.vocab_sizes
+                            if s not in corpus.cached_vocab_sizes]
+    return render_template('vocab.html',
+                           topbar_dict=topbar_dict,
+                           param_names=corpus.param_names,
+                           corpus_name=corpus_name,
+                           uncached_vocab_sizes=uncached_vocab_sizes,
+                           cached_vocab_sizes=corpus.cached_vocab_sizes,
+                           )
+
 # -------------------------------------------- error handling
 
 
 @app.errorhandler(LudwigVizNoArticlesFound)
-def handle_not_found_error(exception):
+def handler(exception):
     return render_template('error.html',
                            message=exception.message,
                            status_code=500,
                            topbar_dict=topbar_dict)
 
+
+@app.errorhandler(LudwigVizNoVocabFound)
+def handler(exception):
+    return render_template('error.html',
+                           message=exception.message,
+                           status_code=500,
+                           topbar_dict=topbar_dict)
 
 @app.errorhandler(500)
 def handle_app_error(exception):

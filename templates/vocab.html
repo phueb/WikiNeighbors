@@ -1,0 +1,69 @@
+{% extends "layout.html" %}
+
+{% block ludwigviz_top %}
+
+    <div class="mdl-card__title">
+        <h3 class="mdl-card__title-text">{{ corpus_name }}</h3>
+
+    </div>
+    <div class="mdl-card__supporting-text">
+        {%  for param_name in param_names %}
+            <p  style="margin-bottom: 0">{{ param_name }}</p>
+        {%  endfor %}
+    </div>
+    <div class="mdl-card__actions mdl-card--border">
+        <a href="{{ url_for('neighbors', corpus_name=corpus_name) }}"
+           class="mdl-button">Re-load</a>
+        <a href="{{ url_for('home') }}"
+           class="mdl-button">Back</a>
+    </div>
+
+{% endblock %}
+
+{% block ludwigviz_middle %}
+
+    <div class="mdl-card__supporting-text">
+        Cached vocabularies:
+        {%  for vocab in cached_vocab_sizes %}
+            <p  style="margin-bottom: 0">{{ vocab }}</p>
+        {%  endfor %}
+    </div>
+
+
+{% endblock %}
+
+{% block ludwigviz_bottom %}
+    {%  if uncached_vocab_sizes %}
+        <form action="{{ url_for('cache_vocab', corpus_name=corpus_name) }}" id="form-cache"></form>
+
+        <div class="mdl-card__supporting-text">
+            {% for size in uncached_vocab_sizes %}
+                <label for="header_id{{ loop.index0 }}" class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect">
+                    <input type="checkbox"
+                           name="size"
+                           id="header_id{{ loop.index0 }}"
+                           class="mdl-checkbox__input"
+                           value="{{ size }}" form="form-cache">
+                    <span class="mdl-checkbox__label">{{ size }}</span>
+                </label>
+            {% endfor %}
+
+            {% for opt in opts %}
+                <label for="order_id{{ loop.index0 }}" class="mdl-radio mdl-js-radio mdl-js-ripple-effect inline-radio">
+                    <input type="radio"
+                           name="opt"
+                           id="order_id{{ loop.index0 }}"
+                           class="mdl-radio__button"
+                           value="{{ opt }}" form="form-cache">
+                    <span class="mdl-radio__label">{{ opt }}</span>
+                </label>
+            {% endfor %}
+
+        </div>
+
+        <div class="mdl-card__actions mdl-card--border">
+            <input type="submit" name="cache_vocab" class="mdl-button" value="cache_vocab" form="form-cache">
+        </div>
+    {%  endif %}
+{% endblock %}
+
