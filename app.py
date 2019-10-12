@@ -51,8 +51,7 @@ def neighbors(corpus_name):
 
     results = []
     for word in session['words']:
-        sims = corpus.sim_mat[corpus.w2id[word]]
-        sorted_neighbors = sorted(corpus.vocab, key=lambda w: sims[corpus.w2id[w]])
+        sorted_neighbors = corpus.get_neighbors(word)
         top_neighbors = sorted_neighbors[-config.Max.num_neighbors:]
         results.append('<b>{}:</b> {}'.format(word, ', '.join(top_neighbors)))
 
@@ -61,9 +60,9 @@ def neighbors(corpus_name):
                            topbar_dict=topbar_dict,
                            corpus_name=corpus_name,
                            results=results,
-                           num_words = human_format(config.Max.num_words),
-                           num_docs = human_format(config.Max.num_docs),
-                           elapsed = elapsed
+                           num_words=human_format(config.Max.num_words),
+                           num_docs=human_format(config.Max.num_docs),
+                           elapsed=elapsed
                            )
 
 
@@ -92,7 +91,6 @@ def autocomplete():
 
 @app.route('/query/<string:corpus_name>/', methods=['GET', 'POST'])
 def query(corpus_name):
-    start = timer()
     corpus = Corpus(corpus_name)
 
     # form
@@ -110,19 +108,12 @@ def query(corpus_name):
     if form.validate():
         words = form.field.data.split()  # TODO only allow a single word per form - string, not list
         session['words'] = words
-
-        print(len(session['words']))
-
         return redirect(url_for('neighbors', corpus_name=corpus_name))
     else:
-        elapsed = timer() - start
         return render_template('query.html',
                                topbar_dict=topbar_dict,
                                corpus_name=corpus_name,
                                form=form,
-                               num_words=human_format(config.Max.num_words),
-                               num_docs=human_format(config.Max.num_docs),
-                               elapsed=elapsed
                                )
 
 # -------------------------------------------- error handling

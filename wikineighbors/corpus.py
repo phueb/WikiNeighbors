@@ -3,12 +3,13 @@ import numpy as np
 from collections import Counter
 from stop_words import get_stop_words
 from sklearn.metrics.pairwise import cosine_similarity
+from multiprocessing import Queue, cpu_count, Process, Manager
+from timeit import default_timer as timer
 
 from wikineighbors.io import Params
 from wikineighbors.exceptions import LudwigVizNoArticlesFound
 from wikineighbors.utils import gen_100_param_names, to_param_path
 from wikineighbors import config
-
 
 stop_words = get_stop_words('en')
 
@@ -71,48 +72,93 @@ class Corpus:
                 for doc in f:  # lazy generator
                     yield doc
 
-    @cached_property
-    def w2dfs(self):
+    @staticmethod
+    def count_process(jobs_queue: Queue, shared_list):
+        while True:
+            doc = jobs_queue.get()
+            if doc:
+                words = [w for w in doc.split() if w not in stop_words]
+                w2df = Counter(words)
+                shared_list.append(w2df)
+            else:
+                break
 
-        # TODO a classic map-reduce problem:
-        #  put a queue in a different process generating docs, and have a set of worker processes operate on them
+    def make_w2dfs(self):
+        print('Counting words in documents...')
+        start = timer()
 
-        w2dfs = []
+        manager = Manager()
+        shared_list = manager.list()  # TODO as currently implemented, multiprocessing only saves 1 sec
+
+        workers = []
+        worker_count = config.Corpus.worker_count or max(1, cpu_count() - 1)
+        docs_queue = Queue(maxsize=10 * worker_count)
+        for i in range(worker_count):
+            counter = Process(target=self.count_process,
+                              args=(docs_queue, shared_list))
+            counter.daemon = True  # only live while parent process lives
+            counter.start()
+            workers.append(counter)
+
+        # add docs to queue
         num_docs = 0
         for doc in self.gen_docs():
-            words = [w for w in doc.split() if w not in stop_words]
-            w2df = Counter(words)
-            w2dfs.append(w2df)
+            docs_queue.put(doc)  # goes to any available extract_process
             num_docs += 1
             if num_docs == config.Max.num_docs:
                 break
-        return w2dfs
 
-    @cached_property
-    def w2f(self):
+        # signal termination
+        for _ in workers:
+            docs_queue.put(None)
+        # wait for workers to terminate
+        for w in workers:
+            w.join()
+
+        print('Took {} secs'.format(timer() - start))
+        return shared_list
+
+    @staticmethod
+    def make_w2f(w2dfs):
+        print('Counting all words...')
         res = Counter()
-        for w2df in self.w2dfs:
+        for w2df in w2dfs:
             res.update(w2df)  # frequencies are incremented rather than replaced
         return res
 
-    @cached_property
-    def w2id(self):
-        return {w: i for i, w in enumerate(self.vocab)}
+    @staticmethod
+    def make_w2id(vocab):
+        return {w: i for i, w in enumerate(vocab)}
 
-    @cached_property
-    def vocab(self):
+    def make_vocab(self, w2f):
+        print('Making vocab...')
         if self._vocab:
             return self._vocab
         else:
-            return [w for w, f in sorted(self.w2f.most_common(config.Max.num_words))]
+            return [w for w, f in sorted(w2f.most_common(config.Max.num_words))]
 
-    @cached_property
-    def term_by_doc_mat(self):
+    @staticmethod
+    def make_term_by_doc_mat(vocab, w2dfs):  # TODO slow - add multiprocessing here
+        print('Making term-by-window matrix...')
         res = np.zeros((config.Max.num_words, config.Max.num_docs))
-        for col_id, w2df in enumerate(self.w2dfs):
-            res[:, col_id] = [w2df[w] for w in self.vocab]
+        for col_id, w2df in enumerate(w2dfs):
+            res[:, col_id] = [w2df[w] for w in vocab]
         return res
 
-    @cached_property
-    def sim_mat(self):
-        return cosine_similarity(self.term_by_doc_mat)
+    @staticmethod
+    def to_sim_mat(mat):
+        print('Making similarity matrix...')
+        return cosine_similarity(mat)
+
+    def get_neighbors(self, word):
+
+        w2dfs = self.make_w2dfs()
+        w2f = self.make_w2f(w2dfs)
+        vocab = self.make_vocab(w2f)
+        w2id = self.make_w2id(vocab)
+        term_by_doc_mat = self.make_term_by_doc_mat(vocab, w2dfs)
+        sim_mat = self.to_sim_mat(term_by_doc_mat)
+
+        print('Computing neighbors...')
+        sims = sim_mat[w2id[word]]
+        return sorted(vocab, key=lambda w: sims[w2id[w]])

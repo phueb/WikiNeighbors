@@ -13,8 +13,8 @@ def make_form(request, corpus):
 
     # request.args only if first attempt did not result in validation
     else:
-        valid_set = corpus.vocab
-        message = 'Found non-word.'
+        valid_set = corpus.make_vocab
+        message = 'Not in vocabulary'
 
     def validator(_, field):
         if config.Default.text in field.data:
