@@ -21,6 +21,5 @@ The following table shows the time it takes to compute a similarity matrix.
 ## TODO
 
 * use sparse format to store co-occurrences beyond 10K vocabulary
-* return similarity value along with neighbor
 * allow user to enter a pair of words and retrieve similarity
 
