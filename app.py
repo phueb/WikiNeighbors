@@ -49,6 +49,9 @@ def info(corpus_name):
 @app.route('/query/<string:corpus_name>', methods=['GET', 'POST'])
 def query(corpus_name):
 
+    if request.args.get('reset'):
+        session.clear()  # don't autofill fields with user's previous words
+
     if not session.get('error_messages', []):
         error_message = ''
         fields = [(config.Default.word, error_message)

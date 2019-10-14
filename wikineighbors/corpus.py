@@ -2,9 +2,9 @@ from cached_property import cached_property
 import numpy as np
 from collections import Counter
 from sklearn.metrics.pairwise import cosine_similarity
-from multiprocessing import Pool
 from timeit import default_timer as timer
 import pickle
+import spacy
 from wikineighbors.utils import regex_digit
 
 from wikineighbors.params import Params
@@ -13,6 +13,7 @@ from wikineighbors.exceptions import WikiNeighborsNoVocabFound
 from wikineighbors.utils import gen_100_param_names, to_param_path
 from wikineighbors import config
 
+nlp = spacy.load('en_core_web_sm')
 
 
 class Corpus:
@@ -87,8 +88,10 @@ class Corpus:
         w2cf = Counter()
         w2dfs = []
         n = 0
-        for doc in self.gen_docs():
-            words = doc.split()
+        for doc in nlp.pipe(self.gen_docs(),
+                            batch_size=config.Corpus.batch_size,
+                            disable=['tagger', 'parser', 'ner']):
+            words = [w.text for w in doc]
             if not words:
                 print('WARNING: No words found')
                 continue

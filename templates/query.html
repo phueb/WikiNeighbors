@@ -7,10 +7,9 @@
 
     </div>
     <div class="mdl-card__actions mdl-card--border">
-        <a href="{{ url_for('query', corpus_name=corpus_name) }}"
-           class="mdl-button">Re-load</a>
-        <a href="{{ url_for('query', corpus_name=corpus_name) }}"
-           class="mdl-button">Back</a>
+        <form id="form-reset" href="{{ url_for('query', corpus_name=corpus_name) }}"></form>
+        <input type="submit" name="reset" class="mdl-button" value="Reset" form="form-reset">
+        <a href="{{ url_for('home') }}" class="mdl-button">Back</a>
     </div>
 
 {% endblock %}
@@ -61,6 +60,9 @@
                         minLength: 2
                     });
                 });
+
+            {#show first text field#}
+            $('.hidden-field:hidden').first().show();
 
             $('#field-adder').click(function () {
                 $('.hidden-field:hidden').first().show()

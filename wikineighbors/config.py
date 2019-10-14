@@ -43,7 +43,7 @@ class Max:
 
 
 class Corpus:
-    worker_count = 4
+    batch_size = 100
     vocab_sizes = [100,
                    1000,
                    10000]
