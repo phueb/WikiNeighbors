@@ -72,13 +72,12 @@ def query(corpus_name):
 def vocab(corpus_name):
     corpus = Corpus(corpus_name)
 
-    uncached_vocab_sizes = [s for s in config.Corpus.vocab_sizes
-                            if s not in corpus.cached_vocab_sizes]
     return render_template('vocab.html',
                            topbar_dict=topbar_dict,
                            corpus_name=corpus_name,
-                           uncached_vocab_sizes=uncached_vocab_sizes,
-                           cached_vocab_sizes=corpus.cached_vocab_sizes,
+                           cats=config.Corpus.cats,
+                           vocab_sizes=config.Corpus.vocab_sizes,
+                           cached_vocab_names=corpus.cached_vocab_names,
                            )
 
 
@@ -87,7 +86,6 @@ def neighbors(corpus_name):
     start = timer()
     corpus = Corpus(corpus_name)
 
-    # chart.value_formatter = lambda x: '%.2f%%' % x if x is not None else '∅'
     results = []
     for word in session['validated_words']:
         sorted_neighbors, sorted_sims = corpus.get_neighbors(word)
@@ -107,7 +105,7 @@ def neighbors(corpus_name):
                            corpus_name=corpus_name,
                            words=session['validated_words'],
                            results=results,
-                           num_words=human_format(config.Max.num_words),
+                           num_words=human_format(corpus.cached_vocab_sizes[-1]),
                            num_docs=human_format(config.Max.num_docs),
                            elapsed=elapsed
                            )
@@ -148,6 +146,7 @@ def validate(corpus_name):
 def cache_vocab(corpus_name):
     corpus = Corpus(corpus_name)
 
+    cat = request.args.get('cat') or config.Default.cat  # use words that are only in chosen POS category
     sizes = request.args.getlist('size')
     if not sizes:
         return render_template('error.html',
@@ -157,7 +156,7 @@ def cache_vocab(corpus_name):
 
     for size in sizes:
         vocab_size = int(size)
-        corpus.save_to_disk(vocab_size)  # saves vocab + sim mat
+        corpus.save_to_disk(vocab_size, cat)  # saves vocab + sim mat
     return redirect(url_for('vocab', corpus_name=corpus_name))
 
 # -------------------------------------------- error handling

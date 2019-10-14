@@ -25,8 +25,8 @@ class Corpus:
     def __init__(self, name):
         self.name = name
         self.cache_path = config.LocalDirs.cache / name
-        self.vocab_file_name_template = 'vocab_{}.pkl'
-        self.sim_mat_file_name_template = 'sim_mat_{}.pkl'
+        self.vocab_file_name_template = 'vocab_{}_{}.pkl'
+        self.sim_mat_file_name_template = 'sim_mat_{}_{}.pkl'
         if not self.cache_path.is_dir():
             self.cache_path.mkdir(parents=True)
 
@@ -91,7 +91,7 @@ class Corpus:
         for doc in nlp.pipe(self.gen_docs(),
                             batch_size=config.Corpus.batch_size,
                             disable=['tagger', 'parser', 'ner']):
-            words = [w.text for w in doc]
+            words = [w.lemma_ for w in doc]
             if not words:
                 print('WARNING: No words found')
                 continue
@@ -103,6 +103,9 @@ class Corpus:
             n += 1
             if n == config.Max.num_docs:
                 break
+
+            if n % 1000 == 0:
+                print(n)
 
         print('Took {} secs to count all words in {} docs in 1 process'.format(
             timer() - start, config.Max.num_docs))
@@ -126,31 +129,51 @@ class Corpus:
 
     # --------------------------------------------------- i/o
 
-    def save_to_disk(self, size):
+    def save_to_disk(self, size, cat):
+        """
+        make vocab + save to disk.
+        if cats is not None, exclude all words from vocab that are not in cats (part-of-speech categories)
+        """
         # make vocab + sim mat
+        print('Making vocab with size={} and cat={}'.format(size, cat))
         w2cf, w2dfs = self.make_counts()
-        vocab = self.make_vocab(w2cf, size)
+        vocab = self.make_vocab(w2cf, size, cat)
 
         assert len(w2dfs) == config.Max.num_docs
-        if not len(vocab) == config.Max.num_words:
-            raise RuntimeError('Did not find enough vocab words.'
-                               ' Try setting number of documents higher')
         sim_mat = self.make_sim_mat(w2dfs, vocab)
 
-        with (self.cache_path / self.vocab_file_name_template.format(size)).open('wb') as f:
+        with (self.cache_path / self.vocab_file_name_template.format(size, cat)).open('wb') as f:
             pickle.dump(vocab, f)
         print('Saved vocab to {}'.format(config.LocalDirs.cache))
 
-        with (self.cache_path / self.sim_mat_file_name_template.format(size)).open('wb') as f:
+        with (self.cache_path / self.sim_mat_file_name_template.format(size, cat)).open('wb') as f:
             pickle.dump(sim_mat, f)
         print('Saved sim_mat to {}'.format(config.LocalDirs.cache))
 
     # ----------------------------------------------------- vocab
 
     @staticmethod
-    def make_vocab(w2cf, size):
+    def make_vocab(w2cf, size, cat):
         print('Making vocab...')
-        return [w for w, f in sorted(w2cf.most_common(size))]
+        doc = ' '.join([w for w, f in sorted(w2cf.items(), key=lambda i: i[1])])
+        vocab = set()
+
+        nlp.max_length = 20000000
+        # TODO instead of setting max length higher, use itertools to chunk  wcf.items()
+
+        for w in nlp(doc, disable=['parser', 'ner']):
+            if cat != config.Corpus.no_cat:
+                if w.pos_ == cat:
+                    vocab.add(w.text)
+            else:
+                vocab.add(w.text)
+
+            if len(vocab) == size:
+                break
+
+        print('Final vocab size={}'.format(len(vocab)))
+
+        return vocab
 
     @cached_property
     def cached_vocab_sizes(self):
@@ -160,9 +183,16 @@ class Corpus:
             sizes.append(size)
         return sorted(sizes)
 
+    @cached_property
+    def cached_vocab_names(self):
+        names = []
+        for p in self.cache_path.glob('vocab_*_{}.pkl'.format(config.Default.cat)):
+            names.append(p.stem.replace('_', '-'))
+        return sorted(names)
+
     def load_largest_vocab(self):
         largest_size = self.cached_vocab_sizes[-1]
-        file_name = self.vocab_file_name_template.format(largest_size)
+        file_name = self.vocab_file_name_template.format(largest_size, config.Default.cat)
         with (self.cache_path / file_name).open('rb') as f:
             res = pickle.load(f)
         assert len(res) == largest_size
@@ -179,8 +209,9 @@ class Corpus:
 
     @staticmethod
     def make_sim_mat(w2dfs, vocab):  # TODO this may benefit from multiprocessing
-        print('Making term-by-doc matrix...')
-        term_by_doc_mat = np.zeros((config.Max.num_words, config.Max.num_docs))
+        shape = (len(vocab), config.Max.num_docs)
+        print('Making term-by-doc matrix with shape={}...'.format(shape))
+        term_by_doc_mat = np.zeros(shape)
         for col_id, w2df in enumerate(w2dfs):
             try:
                 term_by_doc_mat[:, col_id] = [w2df[w] for w in vocab]
@@ -191,7 +222,7 @@ class Corpus:
 
     def load_largest_sim_mat(self):
         largest_size = self.cached_vocab_sizes[-1]
-        file_name = self.sim_mat_file_name_template.format(largest_size)
+        file_name = self.sim_mat_file_name_template.format(largest_size, config.Default.cat)
         with (self.cache_path / file_name).open('rb') as f:
             res = pickle.load(f)
         assert len(res) == largest_size

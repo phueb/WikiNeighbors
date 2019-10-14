@@ -29,6 +29,7 @@ class Default:
     header = 'Corpus ID'
     order = 'descending'
     word = ''
+    cat = 'NOUN'
 
 
 class Time:
@@ -37,13 +38,18 @@ class Time:
 
 class Max:
     num_fields = 50
-    num_words = 10000
-    num_docs = 10000
+    num_docs = 1 * 1000 * 1000
     num_neighbors = 10
+
+    assert num_docs < 6 * 1000 * 1000
 
 
 class Corpus:
+    no_cat = 'ALL'
+    cats = ['PROPN', 'VERB', 'ADP', 'NOUN', 'SYM', 'NUM', no_cat]
     batch_size = 100
-    vocab_sizes = [100,
-                   1000,
-                   10000]
+    vocab_sizes = [1000,
+                   2000,
+                   3000,
+                   4000,
+                   5000]
