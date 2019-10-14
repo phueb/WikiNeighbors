@@ -1,3 +1,5 @@
+lxml
+pygal
 spacy
 flask
 pandas

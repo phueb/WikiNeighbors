@@ -94,3 +94,7 @@ div.contains-table {
     display: inline-block;
     padding: 0px 5px;
 }
+
+.neighbors-container {
+    display: inline-block;
+}

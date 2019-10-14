@@ -2,6 +2,7 @@ from flask import Flask, redirect, url_for, jsonify, session
 from flask import render_template
 from flask import request
 import argparse
+import pygal
 import socket
 from timeit import default_timer as timer
 from wtforms import Form, StringField
@@ -86,18 +87,25 @@ def neighbors(corpus_name):
     start = timer()
     corpus = Corpus(corpus_name)
 
+    # chart.value_formatter = lambda x: '%.2f%%' % x if x is not None else '∅'
     results = []
     for word in session['validated_words']:
-        sorted_neighbors = corpus.get_neighbors(word)
-        top_neighbors = sorted_neighbors[-config.Max.num_neighbors:]
-        result = '<b>{}:</b> {}'.format(word, ', '.join(top_neighbors))
-        print(result)  # TODO add sim value
-        results.append(result)
+        sorted_neighbors, sorted_sims = corpus.get_neighbors(word)
+        top_neighbors = sorted_neighbors[-config.Max.num_neighbors:][::-1]
+        top_sims = sorted_sims[-config.Max.num_neighbors:][::-1]
+        # chart - will be converted to table
+        chart = pygal.Bar()
+        chart.add('cosine', [s.round(2) for s in top_sims])
+        chart.x_labels = ['{:<20}'.format(n) for n in top_neighbors]
+        table = chart.render_table(style=False)
+        res = (word, table)
+        results.append(res)
 
     elapsed = timer() - start
     return render_template('neighbors.html',
                            topbar_dict=topbar_dict,
                            corpus_name=corpus_name,
+                           words=session['validated_words'],
                            results=results,
                            num_words=human_format(config.Max.num_words),
                            num_docs=human_format(config.Max.num_docs),

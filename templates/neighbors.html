@@ -21,8 +21,11 @@
         <h4 class="mdl-card__title-text">Nearest Neighbors</h4>
     </div>
     <div class="mdl-card__supporting-text">
-        {%  for result in results %}
-            <p>{{ result | safe}}</p>
+        {%  for word, table in results %}
+            <div class="neighbors-container">
+                <h5>{{ word }}</h5>
+                {{ table | safe}}
+            </div>
         {% endfor %}
     </div>
 

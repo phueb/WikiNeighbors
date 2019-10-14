@@ -120,9 +120,9 @@ class Corpus:
 
         print('Computing neighbors...')
         sims = self.sim_mat[self.w2id[word]]
-        neighbors = [n for n in sorted(self.vocab, key=lambda w: sims[self.w2id[w]])
-                     if n != word]
-        return neighbors
+        res = [(w, s) for w, s in sorted(zip(self.vocab, sims), key=lambda i: i[1])
+               if w != word]
+        return zip(*res)  # unpack [(w, s), ...(w, s)] to [w, ...w], [s, ..., s]
 
     # --------------------------------------------------- i/o
 
