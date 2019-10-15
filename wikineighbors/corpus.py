@@ -89,6 +89,8 @@ class Corpus:
         w2cf = Counter()
         w2dfs = []
         n = 0
+
+        # generating docs is very fast, but spacy tokenization is very slow
         for doc in nlp.pipe(self.gen_docs(),
                             batch_size=config.Corpus.batch_size,
                             disable=['tagger', 'parser', 'ner']):
@@ -97,7 +99,7 @@ class Corpus:
                 print('WARNING: No words found')
                 continue
 
-            w2df = Counter(words)
+            w2df = Counter(words)  # this is very fast
             w2dfs.append(w2df)
             w2cf.update(w2df)  # frequencies are incremented rather than replaced
 
@@ -108,7 +110,7 @@ class Corpus:
             if n % 1000 == 0:
                 print(n)
 
-        print('Took {} secs to count all words in {} docs in 1 process'.format(
+        print('Took {} secs to count all words in {} docs'.format(
             timer() - start, config.Max.num_docs))
         return w2cf, w2dfs
 

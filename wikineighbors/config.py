@@ -48,9 +48,5 @@ class Corpus:
     max_word_size = 8
     no_cat = 'ALL'
     cats = ['PROPN', 'VERB', 'ADP', 'NOUN', 'SYM', 'NUM', no_cat]
-    batch_size = 1000
-    vocab_sizes = [1000,
-                   2000,
-                   3000,
-                   4000,
-                   5000]
+    batch_size = 1000  # does not have a noticeable effect on speed
+    vocab_sizes = [1000, 2000, 3000, 4000, 5000]
