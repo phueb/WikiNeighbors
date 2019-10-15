@@ -8,15 +8,25 @@ Show neighbors in Wikipedia co-occurrence space via browser app
 
 ### Speed
 
-The following table shows the time it takes to compute a similarity matrix.
+The following table shows the time it takes to compute a similarity matrix for 10K words.
+Even though the text files are stored on the server (the system-76 silverback-3),
+ it takes less time on another, faster machine which has to load the text files over a network connection.
+This means that loading the text files is not a bottleneck;
+ rather it is the CPU intensive operations that `spacy` performs during tokenization.
 
-* number of words = 10K
-* number of documents = 10K
 
-| # words | app on server  | seconds |
-|---------|----------------|---------|
-| 10,000  | True           | 30      |
-| 10,000  | False          | 35      |
+| # docs   | machine           | seconds |
+|----------|-------------------|---------|
+|  10,000  | s76 Oryx Pro      |      30 |
+|  10,000  | s76 silverback-3  |      35 |
+| 100,000  | s76 Oryx Pro      |     260 |
+| 100,000  | s76 silverback-3  |     600 |
+
+Most of this time is spent on tokenization, lemmatization.
+No matrix normalization or SVD operations are performed on the co-occurrence matrix.
+
+Time spent counting is trivial relative to time spent in `spacy` operations.
+This is true despite that all words are counted, and a large dictionairy of counts must be updated
 
 ### Memory
 
