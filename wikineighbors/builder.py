@@ -72,7 +72,10 @@ class SimMatBuilder:
         return w2cf, w2dfs
 
     def build_and_save(self):
-        self._save_to_disk(*self._build())
+        vocab, sim_mat = self._build()
+        self._save_to_disk(vocab, sim_mat)
+        del vocab
+        del sim_mat  # TODO how to make sure it is deleted - weakref?
 
     @staticmethod
     def make_sim_mat(w2dfs, vocab, init_mat):  # this is slow

@@ -15,13 +15,13 @@ This means that loading the text files is not a bottleneck;
  rather it is the CPU intensive operations that `spacy` performs during tokenization.
 
 
-|  # docs   | machine           | seconds |
-|-----------|-------------------|---------|
-|    10,000 | s76 Oryx Pro      |      30 |
-|    10,000 | s76 silverback-3  |      35 |
-|   100,000 | s76 Oryx Pro      |     260 |
-|   100,000 | s76 silverback-3  |     600 |
-| 1,000,000 | s76 Oryx Pro      |    3870 |
+|  # docs   | machine           | seconds | memory (GB) |
+|-----------|-------------------|---------|-------------|
+|    10,000 | s76 oryx pro      |      30 |             |
+|    10,000 | s76 silverback-3  |      35 |             |
+|   100,000 | s76 oryx pro      |     260 |             |
+|   100,000 | s76 silverback-3  |     600 |             |
+| 1,000,000 | s76 oryx pro      |    3870 |          13 |
 
 Most of this time is spent on tokenization, lemmatization.
 No matrix normalization or SVD operations are performed on the co-occurrence matrix.

@@ -2,7 +2,6 @@ from cached_property import cached_property
 
 from wikineighbors.params import CorpusParams
 from wikineighbors.exceptions import WikiNeighborsNoArticlesFound
-from wikineighbors.exceptions import WikiNeighborsNoVocabFound
 from wikineighbors.utils import gen_100_param_names, to_param_path
 from wikineighbors import config
 
