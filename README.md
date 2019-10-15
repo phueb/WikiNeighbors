@@ -39,6 +39,11 @@ Because there are 3.2e^10 bytes in 32GB, we can fit D = 3.2e^10 / 2,000 = 16,000
 This means we can include 16 million articles when building the co-occurrence matrix before running out of memory.
 As there are currently 5 million articles in the English Wikipedia, 32GB is sufficient to include all articles, provided we limit our analysis to only 1000 words.
 
+## Sparsity
+
+The co-occurrence matrix is typically very sparse. Using 5K words and 1M documents, 
+the percentage of nonzero values in the term-by-window co-occurrence matrix is 0.5.
+
 ## TODO
 
 * allow user to enter a pair of words and retrieve similarity
