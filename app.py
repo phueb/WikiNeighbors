@@ -10,6 +10,7 @@ from wtforms import Form, StringField
 import wikineighbors
 from wikineighbors.exceptions import WikiNeighborsNoArticlesFound
 from wikineighbors.exceptions import WikiNeighborsNoVocabFound
+from wikineighbors.exceptions import WikiNeighborsNoMemory
 
 hostname = socket.gethostname()
 
@@ -171,6 +172,14 @@ def handler(exception):
 
 
 @app.errorhandler(WikiNeighborsNoVocabFound)
+def handler(exception):
+    return render_template('error.html',
+                           message=exception.message,
+                           status_code=500,
+                           topbar_dict=topbar_dict)
+
+
+@app.errorhandler(WikiNeighborsNoMemory)
 def handler(exception):
     return render_template('error.html',
                            message=exception.message,

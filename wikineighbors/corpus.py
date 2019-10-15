@@ -9,6 +9,7 @@ from wikineighbors.utils import regex_digit
 
 from wikineighbors.params import Params
 from wikineighbors.exceptions import WikiNeighborsNoArticlesFound
+from wikineighbors.exceptions import WikiNeighborsNoMemory
 from wikineighbors.exceptions import WikiNeighborsNoVocabFound
 from wikineighbors.utils import gen_100_param_names, to_param_path
 from wikineighbors import config
@@ -134,13 +135,23 @@ class Corpus:
         make vocab + save to disk.
         if cats is not None, exclude all words from vocab that are not in cats (part-of-speech categories)
         """
+
+        # check that memory is sufficient
+        shape = (size, config.Max.num_docs)
+        try:
+            init_mat = np.zeros(shape, dtype=np.int16)
+            num_mbs = init_mat.nbytes / 1e6
+            print('Successfully initialized matrix with shape={} requiring {} megabytes'.format(shape, num_mbs))
+        except MemoryError:
+            raise WikiNeighborsNoMemory(shape)
+
         # make vocab + sim mat
         print('Making vocab with size={} and cat={}'.format(size, cat))
         w2cf, w2dfs = self.make_counts()
         vocab = self.make_vocab(w2cf, size, cat)
 
         assert len(w2dfs) == config.Max.num_docs
-        sim_mat = self.make_sim_mat(w2dfs, vocab)
+        sim_mat = self.make_sim_mat(w2dfs, vocab, init_mat)
 
         with (self.cache_path / self.vocab_file_name_template.format(size, cat)).open('wb') as f:
             pickle.dump(vocab, f)
@@ -155,13 +166,16 @@ class Corpus:
     @staticmethod
     def make_vocab(w2cf, size, cat):
         print('Making vocab...')
-        doc = ' '.join([w for w, f in sorted(w2cf.items(), key=lambda i: i[1])])
         vocab = set()
+        num_too_big = 0
+        for text, f in sorted(w2cf.items(), key=lambda i: i[1], reverse=True):
 
-        nlp.max_length = 20000000
-        # TODO instead of setting max length higher, use itertools to chunk  wcf.items()
+            if len(text) > config.Corpus.max_word_size:
+                num_too_big += 1
+                continue
 
-        for w in nlp(doc, disable=['parser', 'ner']):
+            doc = nlp(text, disable=['parser', 'ner'])
+            w = doc[0]
             if cat != config.Corpus.no_cat:
                 if w.pos_ == cat:
                     vocab.add(w.text)
@@ -172,8 +186,9 @@ class Corpus:
                 break
 
         print('Final vocab size={}'.format(len(vocab)))
+        print('Excluded {} words that had more than {} characters'.format(num_too_big, config.Corpus.max_word_size))
 
-        return vocab
+        return list(vocab)
 
     @cached_property
     def cached_vocab_sizes(self):
@@ -208,17 +223,16 @@ class Corpus:
     # --------------------------------------------------- sim mat
 
     @staticmethod
-    def make_sim_mat(w2dfs, vocab):  # TODO this may benefit from multiprocessing
+    def make_sim_mat(w2dfs, vocab, init_mat):  # TODO this may benefit from multiprocessing
         shape = (len(vocab), config.Max.num_docs)
         print('Making term-by-doc matrix with shape={}...'.format(shape))
-        term_by_doc_mat = np.zeros(shape)
         for col_id, w2df in enumerate(w2dfs):
             try:
-                term_by_doc_mat[:, col_id] = [w2df[w] for w in vocab]
+                init_mat[:, col_id] = [w2df[w] for w in vocab]
             except IndexError:
                 print(col_id)
         print('Done')
-        return cosine_similarity(term_by_doc_mat)
+        return cosine_similarity(init_mat)
 
     def load_largest_sim_mat(self):
         largest_size = self.cached_vocab_sizes[-1]

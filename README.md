@@ -34,3 +34,4 @@ As there are currently 5 million articles in the English Wikipedia, 32GB is suff
 * allow user to enter a pair of words and retrieve similarity
 * provide option of saving a noun-only vocabulary
 * fix tooltip on hover to display param2val
+* javascript progressbar when caching vocab

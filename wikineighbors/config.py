@@ -38,16 +38,17 @@ class Time:
 
 class Max:
     num_fields = 50
-    num_docs = 1 * 1000 * 1000
+    num_docs = 1 * 1000 * 100
     num_neighbors = 10
 
     assert num_docs < 6 * 1000 * 1000
 
 
 class Corpus:
+    max_word_size = 8
     no_cat = 'ALL'
     cats = ['PROPN', 'VERB', 'ADP', 'NOUN', 'SYM', 'NUM', no_cat]
-    batch_size = 100
+    batch_size = 1000
     vocab_sizes = [1000,
                    2000,
                    3000,
