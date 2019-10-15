@@ -26,7 +26,10 @@ Most of this time is spent on tokenization, lemmatization.
 No matrix normalization or SVD operations are performed on the co-occurrence matrix.
 
 Time spent counting is trivial relative to time spent in `spacy` operations.
-This is true despite that all words are counted, and a large dictionairy of counts must be updated
+This is true despite that all words are counted, and a large dictionary of counts must be updated.
+
+Accessing the text files via VPN and a slow network connection does not add significant overhead.
+Future work should focus on faster tokenization, which may involve moving away from `spacy`. 
 
 ### Memory
 
@@ -42,6 +45,6 @@ As there are currently 5 million articles in the English Wikipedia, 32GB is suff
 ## TODO
 
 * allow user to enter a pair of words and retrieve similarity
-* provide option of saving a noun-only vocabulary
+* let user choose how many documents to include during caching - and show doc count used for cached vocabs
 * fix tooltip on hover to display param2val
 * javascript progressbar when caching vocab

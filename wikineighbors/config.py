@@ -38,7 +38,7 @@ class Time:
 
 class Max:
     num_fields = 50
-    num_docs = 1 * 1000 * 100
+    num_docs = 1 * 1000 * 1000
     num_neighbors = 10
 
     assert num_docs < 6 * 1000 * 1000

@@ -180,9 +180,9 @@ class Corpus:
             w = doc[0]
             if cat != config.Corpus.no_cat:
                 if w.pos_ == cat:
-                    vocab.add(w.text)
+                    vocab.add(w.text.lower())
             else:
-                vocab.add(w.text)
+                vocab.add(w.text.lower())
 
             if len(vocab) == size:
                 break
