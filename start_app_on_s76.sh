@@ -17,5 +17,5 @@ ssh -X ${SERVER_NAME} <<- EOF
         kill -9  \${APP_PID}
     fi
     cd /home/ph/WikiNeighbors
-    python3.6 app.py  --no-debug --s76
+    python3.6 app.py --no-debug --s76
 EOF

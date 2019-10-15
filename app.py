@@ -12,9 +12,6 @@ from wikineighbors.exceptions import WikiNeighborsNoArticlesFound
 from wikineighbors.exceptions import WikiNeighborsNoVocabFound
 from wikineighbors.exceptions import WikiNeighborsNoMemory
 from wikineighbors.exceptions import WikiNeighborsNoSpecs
-from wikineighbors.responder import Responder
-from wikineighbors.builder import SimMatBuilder
-from wikineighbors.params import Specs
 
 
 class WordInputForm(Form):
@@ -270,6 +267,9 @@ if __name__ == "__main__":  # pycharm does not use this
     from wikineighbors.utils import sort_rows
     from wikineighbors.utils import human_format
     from wikineighbors.corpus import Corpus
+    from wikineighbors.responder import Responder
+    from wikineighbors.builder import SimMatBuilder
+    from wikineighbors.params import Specs
 
     topbar_dict = {'listing': config.RemoteDirs.research_data,
                    'hostname': hostname,
