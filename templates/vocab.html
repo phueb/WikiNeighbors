@@ -4,6 +4,8 @@
 
     <div class="mdl-card__title">
         <h3 class="mdl-card__title-text">{{ corpus_name }}</h3>
+        <div class="mdl-layout-spacer"></div>
+        {{ session[corpus_name] }}
 
     </div>
     <div class="mdl-card__actions mdl-card--border">
@@ -16,41 +18,69 @@
 {% endblock %}
 
 {% block ludwigviz_middle %}
+    <form action="{{ url_for('load_vocab', corpus_name=corpus_name) }}" id="form-load-vocab"></form>
 
     <div class="mdl-card__title">
-        <h3 class="mdl-card__title-text">Cached vocabularies:</h3>
+        <h3 class="mdl-card__title-text">Load existing vocabulary:</h3>
     </div>
     <div class="mdl-card__supporting-text">
-        {%  for vocab in cached_vocab_names %}
-            <p  style="margin-bottom: 0">- {{ vocab }}</p>
+        {%  for vocab_name in cached_vocab_names %}
+            <label for="vocab_name_id{{ loop.index0 }}" class="mdl-radio mdl-js-radio mdl-js-ripple-effect">
+                <input type="checkbox"
+                       name="vocab_name"
+                       id="vocab_name_id{{ loop.index0 }}"
+                       class="mdl-radio__button"
+                       value="{{ vocab_name }}" form="form-load-vocab">
+                <span class="mdl-radio__label">{{ vocab_name }}</span>
+            </label>
         {%  endfor %}
     </div>
 
-
+    <div class="mdl-card__actions mdl-card--border">
+        <input type="submit" name="load_vocab" class="mdl-button trigger-loading" value="load vocab" form="form-load-vocab">
+    </div>
 {% endblock %}
 
 {% block ludwigviz_bottom %}
-    <form action="{{ url_for('cache_vocab', corpus_name=corpus_name) }}" id="form-cache"></form>
+    <div class="mdl-card__title">
+        <h3 class="mdl-card__title-text">Build new Vocabulary:</h3>
+    </div>
+
+    <form action="{{ url_for('cache_vocab', corpus_name=corpus_name) }}" id="form-cache-vocab"></form>
 
     <div class="mdl-card__supporting-text">
-        {% for size in vocab_sizes %}
-            <label for="header_id{{ loop.index0 }}" class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect">
-                <input type="checkbox"
-                       name="size"
-                       id="header_id{{ loop.index0 }}"
-                       class="mdl-checkbox__input"
-                       value="{{ size }}" form="form-cache">
-                <span class="mdl-checkbox__label">{{ size }}</span>
+        <h5>Vocabulary Size</h5>
+        {% for vocab_size in vocab_sizes %}
+            <label for="size_id{{ loop.index0 }}" class="mdl-radio mdl-js-radio mdl-js-ripple-effect inline-radio">
+                <input type="radio"
+                       name="vocab_size"
+                       id="size_id{{ loop.index0 }}"
+                       class="mdl-radio__button"
+                       value="{{ vocab_size }}" form="form-cache-vocab">
+                <span class="mdl-radio__label">{{ vocab_size }}</span>
             </label>
         {% endfor %}
-
+        <div class="mdl-layout-spacer"></div>
+        <h5>Number of articles</h5>
+        {% for corpus_size in corpus_sizes %}
+            <label for="corpus_size_id{{ loop.index0 }}" class="mdl-radio mdl-js-radio mdl-js-ripple-effect inline-radio">
+                <input type="radio"
+                       name="corpus_size"
+                       id="corpus_size_id{{ loop.index0 }}"
+                       class="mdl-radio__button"
+                       value="{{ corpus_size }}" form="form-cache-vocab">
+                <span class="mdl-radio__label">{{ corpus_size }}</span>
+            </label>
+        {% endfor %}
+        <div class="mdl-layout-spacer"></div>
+        <h5>Part-of-speech Class</h5>
         {% for cat in cats %}
             <label for="cat_id{{ loop.index0 }}" class="mdl-radio mdl-js-radio mdl-js-ripple-effect inline-radio">
                 <input type="radio"
                        name="cat"
                        id="cat_id{{ loop.index0 }}"
                        class="mdl-radio__button"
-                       value="{{ cat }}" form="form-cache">
+                       value="{{ cat }}" form="form-cache-vocab">
                 <span class="mdl-radio__label">{{ cat }}</span>
             </label>
         {% endfor %}
@@ -58,7 +88,7 @@
     </div>
 
     <div class="mdl-card__actions mdl-card--border">
-        <input type="submit" name="cache_vocab" class="mdl-button trigger-loading" value="cache vocab" form="form-cache">
+        <input type="submit" name="cache_vocab" class="mdl-button trigger-loading" value="build vocab" form="form-cache-vocab">
     </div>
 {% endblock %}
 

@@ -11,6 +11,16 @@ import wikineighbors
 from wikineighbors.exceptions import WikiNeighborsNoArticlesFound
 from wikineighbors.exceptions import WikiNeighborsNoVocabFound
 from wikineighbors.exceptions import WikiNeighborsNoMemory
+from wikineighbors.exceptions import WikiNeighborsNoSpecs
+from wikineighbors.responder import Responder
+from wikineighbors.builder import SimMatBuilder
+from wikineighbors.params import Specs
+
+
+class WordInputForm(Form):
+    word = StringField()
+    msg = ''
+
 
 hostname = socket.gethostname()
 
@@ -51,8 +61,12 @@ def info(corpus_name):
 @app.route('/query/<string:corpus_name>', methods=['GET', 'POST'])
 def query(corpus_name):
 
+    if not session.get(corpus_name):
+        raise WikiNeighborsNoSpecs(corpus_name)
+
     if request.args.get('reset'):
-        session.clear()  # don't autofill fields with user's previous words
+        session['error_messages'] = []
+        session['words'] = []  # don't autofill fields with user's previous words
 
     if not session.get('error_messages', []):
         error_message = ''
@@ -78,6 +92,7 @@ def vocab(corpus_name):
                            corpus_name=corpus_name,
                            cats=config.Corpus.cats,
                            vocab_sizes=config.Corpus.vocab_sizes,
+                           corpus_sizes=config.Corpus.corpus_sizes,
                            cached_vocab_names=corpus.cached_vocab_names,
                            )
 
@@ -86,10 +101,11 @@ def vocab(corpus_name):
 def neighbors(corpus_name):
     start = timer()
     corpus = Corpus(corpus_name)
+    responder = Responder.load_from_session(session, corpus)
 
     results = []
     for word in session['validated_words']:
-        sorted_neighbors, sorted_sims = corpus.get_neighbors(word)
+        sorted_neighbors, sorted_sims = responder.get_neighbors(word)
         top_neighbors = sorted_neighbors[-config.Max.num_neighbors:][::-1]
         top_sims = sorted_sims[-config.Max.num_neighbors:][::-1]
         # chart - will be converted to table
@@ -106,8 +122,8 @@ def neighbors(corpus_name):
                            corpus_name=corpus_name,
                            words=session['validated_words'],
                            results=results,
-                           num_words=human_format(corpus.cached_vocab_sizes[-1]),
-                           num_docs=human_format(config.Max.num_docs),
+                           num_words=human_format(responder.specs.vocab_size),
+                           num_docs=human_format(responder.specs.corpus_size),
                            elapsed=elapsed
                            )
 
@@ -117,12 +133,14 @@ def neighbors(corpus_name):
 @app.route('/autocomplete/<string:corpus_name>', methods=['GET'])
 def autocomplete(corpus_name):
     corpus = Corpus(corpus_name)
-    return jsonify(json_list=corpus.vocab)
+    responder = Responder.load_from_session(session, corpus)
+    return jsonify(json_list=responder.vocab)
 
 
 @app.route('/validate/<string:corpus_name>', methods=['GET', 'POST'])
 def validate(corpus_name):
     corpus = Corpus(corpus_name)
+    responder = Responder.load_from_session(session, corpus)
     err_message = 'Not in vocab'
 
     words = session['words'] = request.args.getlist('word')
@@ -131,7 +149,7 @@ def validate(corpus_name):
     for n, word in enumerate(words):
         if word == config.Default.word:
             session['error_messages'].append('')
-        elif word not in corpus.vocab:
+        elif word not in responder.vocab:
             session['error_messages'].append(err_message)
         else:
             session['error_messages'].append('')
@@ -147,17 +165,36 @@ def validate(corpus_name):
 def cache_vocab(corpus_name):
     corpus = Corpus(corpus_name)
 
-    cat = request.args.get('cat') or config.Default.cat  # use words that are only in chosen POS category
-    sizes = request.args.getlist('size')
-    if not sizes:
+    # specs for builder
+    vocab_size = request.args.get('vocab_size')
+    corpus_size = request.args.get('corpus_size')  # number of articles
+    cat = request.args.get('cat')  # use words that are only in chosen POS category
+
+    # validation
+    if not vocab_size or not corpus_size or not cat:
         return render_template('error.html',
-                               message='No vocabulary size selected',
+                               message='Incomplete submission',
                                status_code=500,
                                topbar_dict=topbar_dict)
 
-    for size in sizes:
-        vocab_size = int(size)
-        corpus.save_to_disk(vocab_size, cat)  # saves vocab + sim mat
+    specs = Specs(vocab_size, corpus_size, cat)
+    builder = SimMatBuilder(corpus, specs)
+    builder.build_and_save()  # saves vocab + sim mat
+
+    return redirect(url_for('vocab', corpus_name=corpus_name))
+
+
+@app.route('/load_vocab/<string:corpus_name>', methods=['GET', 'POST'])
+def load_vocab(corpus_name):
+
+    vocab_name = request.args.get('vocab_name')
+    if not vocab_name:
+        return render_template('error.html',
+                               message='Incomplete submission',
+                               status_code=500,
+                               topbar_dict=topbar_dict)
+
+    session[corpus_name] = vocab_name
     return redirect(url_for('vocab', corpus_name=corpus_name))
 
 # -------------------------------------------- error handling
@@ -180,6 +217,14 @@ def handler(exception):
 
 
 @app.errorhandler(WikiNeighborsNoMemory)
+def handler(exception):
+    return render_template('error.html',
+                           message=exception.message,
+                           status_code=500,
+                           topbar_dict=topbar_dict)
+
+
+@app.errorhandler(WikiNeighborsNoSpecs)
 def handler(exception):
     return render_template('error.html',
                            message=exception.message,
@@ -218,17 +263,13 @@ if __name__ == "__main__":  # pycharm does not use this
         wikineighbors.s76 = True
         print('Changing path to shared drive because --s76')
 
-    # import after setting s76
+    # import after setting s76 flag
 
     from wikineighbors import config
     from wikineighbors.io import make_home_data
     from wikineighbors.utils import sort_rows
     from wikineighbors.utils import human_format
     from wikineighbors.corpus import Corpus
-
-    class WordInputForm(Form):
-        word = StringField()
-        msg = ''
 
     topbar_dict = {'listing': config.RemoteDirs.research_data,
                    'hostname': hostname,

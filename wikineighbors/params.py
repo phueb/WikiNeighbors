@@ -1,7 +1,8 @@
+import attr
 import yaml
 
 
-class Params:
+class CorpusParams:
 
     def __init__(self, params_path):
 
@@ -34,3 +35,10 @@ class Params:
         for k, v in sorted(self.stripped_param2val.items()):
             res += '<p style="margin-bottom: 0px">{}={}</p>'.format(k, v)
         return res
+
+
+@attr.s
+class Specs(object):
+    vocab_size = attr.ib(converter=int)
+    corpus_size = attr.ib(converter=int)
+    cat = attr.ib(factory=str)

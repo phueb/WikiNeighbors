@@ -4,8 +4,10 @@
 
     <div class="mdl-card__title">
         <h3 class="mdl-card__title-text">{{ corpus_name }}</h3>
-
+        <div class="mdl-layout-spacer"></div>
+        {{ session[corpus_name] }}
     </div>
+
     <div class="mdl-card__actions mdl-card--border">
         <a href="{{ url_for('neighbors', corpus_name=corpus_name) }}"
            class="mdl-button">Re-load</a>

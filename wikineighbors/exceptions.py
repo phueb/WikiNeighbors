@@ -20,3 +20,11 @@ class WikiNeighborsNoMemory(Exception):
         self.message = 'WikiNeighbors: Not enough memory for matrix of shape {}'.format(shape)
         if status_code is not None:
             self.status_code = status_code
+
+
+class WikiNeighborsNoSpecs(Exception):
+    def __init__(self, corpus_name, status_code=500):
+        Exception.__init__(self)
+        self.message = 'WikiNeighbors: Must load vocabulary for {}'.format(corpus_name)
+        if status_code is not None:
+            self.status_code = status_code

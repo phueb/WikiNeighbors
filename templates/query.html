@@ -4,8 +4,10 @@
 
     <div class="mdl-card__title">
         <h3 class="mdl-card__title-text">{{ corpus_name }}</h3>
-
+        <div class="mdl-layout-spacer"></div>
+        {{ session[corpus_name] }}
     </div>
+
     <div class="mdl-card__actions mdl-card--border">
         <form id="form-reset" href="{{ url_for('query', corpus_name=corpus_name) }}"></form>
         <input type="submit" name="reset" class="mdl-button" value="Reset" form="form-reset">

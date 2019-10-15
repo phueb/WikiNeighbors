@@ -1,3 +1,6 @@
+attrs
+scipy
+numpy
 lxml
 pygal
 spacy

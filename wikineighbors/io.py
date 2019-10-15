@@ -1,7 +1,6 @@
 from wikineighbors import config
-from wikineighbors.params import Params
+from wikineighbors.params import CorpusParams
 from wikineighbors.utils import get_id_as_int, get_time_modified, count_replications
-from wikineighbors.corpus import Corpus
 
 
 def make_home_data():
@@ -13,19 +12,17 @@ def make_home_data():
     to achieve this, param_name folders must be iterated over in order (param_1, param2, ...)
     """
     stripped_param2vals = []
-    _buttons = ['info', 'vocab', 'query']  # careful, these must also be names of URLS
+    buttons = ['info', 'vocab', 'query']  # careful, these must also be names of URLS
     headers = ['Corpus ID', 'Last modified']
     rows = []
     all_param_paths = config.RemoteDirs.runs.glob('param*')
     for p in sorted(all_param_paths, key=lambda p: get_id_as_int(p.name)):
-        params = Params(p)
+        params = CorpusParams(p)
         # do not assign a row to a configuration which has already been assigned a row
         # this has a filtering effect because 'part' information is first removed
         if params.stripped_param2val not in stripped_param2vals:  # lets through only a new corpus
             param_id = get_id_as_int(p.name)
             corpus_name = 'Corpus-{}'.format(param_id)
-            corpus = Corpus(corpus_name)
-            buttons = _buttons[:] if corpus.cached_vocab_sizes else _buttons[:-1]
             row = {headers[0]: param_id,
                    headers[1]: get_time_modified(p),
                    # used, but not displayed in table
@@ -40,6 +37,6 @@ def make_home_data():
 
         stripped_param2vals.append(params.stripped_param2val)
 
-    return headers, rows, _buttons
+    return headers, rows, buttons
 
 

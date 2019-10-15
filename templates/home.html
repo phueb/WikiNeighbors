@@ -23,7 +23,7 @@
                 </thead>
                 <tbody>
                 {% for row in rows %}
-                    <tr>
+                    <tr id="tooltip_id{{ loop.index0 }}">
                         {% for k in headers %}
                             <td class="mdl-data-table__cell--non-numeric">
                                 {{ row[k] }}

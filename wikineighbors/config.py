@@ -29,7 +29,6 @@ class Default:
     header = 'Corpus ID'
     order = 'descending'
     word = ''
-    cat = 'NOUN'
 
 
 class Time:
@@ -38,10 +37,7 @@ class Time:
 
 class Max:
     num_fields = 50
-    num_docs = 1 * 1000 * 1000
     num_neighbors = 10
-
-    assert num_docs < 6 * 1000 * 1000
 
 
 class Corpus:
@@ -50,3 +46,5 @@ class Corpus:
     cats = ['PROPN', 'VERB', 'ADP', 'NOUN', 'SYM', 'NUM', no_cat]
     batch_size = 1000  # does not have a noticeable effect on speed
     vocab_sizes = [1000, 2000, 3000, 4000, 5000]
+    corpus_sizes = [1 * 1000, 10 * 1000, 100 * 1000, 1000 * 1000]
+    num_svd_dimensions = 300
