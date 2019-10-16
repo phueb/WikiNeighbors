@@ -46,5 +46,5 @@ class Corpus:
     cats = ['PROPN', 'VERB', 'ADP', 'NOUN', 'SYM', 'NUM', no_cat]
     batch_size = 1000  # does not have a noticeable effect on speed
     vocab_sizes = [1000, 2000, 3000, 4000, 5000]
-    corpus_sizes = [1 * 1000, 10 * 1000, 100 * 1000, 1000 * 1000]
+    corpus_sizes = [10 * 1000, 100 * 1000, 1000 * 1000, 2000000, 3000000, 4000000, 5000000]
     num_svd_dimensions = 300

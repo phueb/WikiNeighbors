@@ -1,9 +1,6 @@
 import numpy as np
-from collections import Counter
 from sklearn.metrics.pairwise import cosine_similarity
-from timeit import default_timer as timer
 import pickle
-import spacy
 from scipy import sparse
 from scipy.sparse import linalg as slinalg
 
@@ -11,8 +8,6 @@ from wikineighbors.exceptions import WikiNeighborsNoMemory
 from wikineighbors.exceptions import WikiNeighborsNoSpecs
 from wikineighbors.params import Specs
 from wikineighbors import config
-
-nlp = spacy.load('en_core_web_sm')
 
 
 class SimMatBuilder:
@@ -39,37 +34,6 @@ class SimMatBuilder:
             raise WikiNeighborsNoSpecs
         specs = Specs(**kwargs)
         return cls(corpus, specs)
-
-    def make_counts(self):
-        print('Counting all words in {} docs...'.format(self.specs.corpus_size))
-        start = timer()
-        w2cf = Counter()
-        w2dfs = []
-        n = 0
-
-        # generating docs is very fast, but spacy tokenization is very slow
-        for doc in nlp.pipe(self.corpus.gen_docs(),
-                            batch_size=config.Corpus.batch_size,
-                            disable=['tagger', 'parser', 'ner']):
-            words = [w.lemma_ for w in doc]
-            if not words:
-                print('WARNING: No words found')
-                continue
-
-            w2df = Counter(words)  # this is very fast
-            w2dfs.append(w2df)
-            w2cf.update(w2df)  # frequencies are incremented rather than replaced
-
-            n += 1
-            if n == self.specs.corpus_size:
-                break
-
-            if n % 1000 == 0:
-                print(n)
-
-        print('Took {} secs to count all words in {} docs'.format(
-            timer() - start, self.specs.corpus_size))
-        return w2cf, w2dfs
 
     def build_and_save(self):
         vocab, sim_mat = self._build()
@@ -104,14 +68,12 @@ class SimMatBuilder:
         print('Making vocab...')
         vocab = set()
         num_too_big = 0
-        for text, f in sorted(w2cf.items(), key=lambda i: i[1], reverse=True):
+        for w, f in sorted(w2cf.items(), key=lambda i: i[1], reverse=True):
 
-            if len(text) > config.Corpus.max_word_size:
+            if len(w) > config.Corpus.max_word_size:
                 num_too_big += 1
                 continue
 
-            doc = nlp(text, disable=['parser', 'ner'])
-            w = doc[0]
             if self.specs.cat != config.Corpus.no_cat:
                 if w.pos_ == self.specs.cat:
                     vocab.add(w.text.lower())
@@ -140,8 +102,16 @@ class SimMatBuilder:
 
         # make vocab
         print('Making vocab with size={} and cat={}'.format(self.specs.vocab_size, self.specs.cat))
-        w2cf, w2dfs = self.make_counts()
+
+
+        # TODO load w2dfs from WikiOrder
+        #  and in a multiprocesing loop, update w2cf and populate term-doc-mat
+
+        raise NotImplementedError
+
+
         vocab = self.make_vocab(w2cf)
+        del w2cf
 
         # make sim mat
         sim_mat = self.make_sim_mat(w2dfs, vocab, init_mat)
