@@ -32,7 +32,13 @@
     </div>
 
     <div class="mdl-card__supporting-text">
+        {{ filtered_sim_table | safe }}
+    </div>
+
+    <div class="mdl-card__supporting-text">
         Computed neighbors given {{ num_words }} words and {{ num_docs }} articles in {{ '{:.1f}'.format(elapsed) }} seconds.
+        <br>
+        Input to cosine similarity is a term-by-doc co-occurrence matrix reduced via SVD to {{ num_svd_dims }} dimensions.
     </div>
 
 

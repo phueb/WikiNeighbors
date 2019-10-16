@@ -37,6 +37,11 @@ class Responder:
     def w2id(self):
         return {w: i for i, w in enumerate(self.vocab)}
 
+    def get_sims(self, word, other_words):
+        other_ids = [self.w2id[w] for w in other_words]
+        res = self.sim_mat[self.w2id[word], other_ids]
+        return res
+
     def get_neighbors(self, word):
         if not self.corpus.cached_vocab_names:
             raise WikiNeighborsNoVocabFound(self.corpus.name)

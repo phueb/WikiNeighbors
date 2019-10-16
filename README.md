@@ -46,7 +46,7 @@ the percentage of nonzero values in the term-by-window co-occurrence matrix is 0
 
 ## TODO
 
-* allow user to enter a pair of words and retrieve similarity
+* add custom words to vocab
 * javascript progressbar when caching vocab
 
 The similarity matrix is too large to compute in-memory.

@@ -22,7 +22,7 @@
         <div class="mdl-card__supporting-text" id="fields-div">
 
             {%  for word, msg in fields %}
-                <div class="hidden-field" style="display: none">
+                <div class="hidden-field" style="display: {{ 'visible' if word else 'none' }}">
                     <div class="mdl-textfield mdl-js-textfield">
                         <input class="mdl-textfield__input"
                                id="field_id{{ loop.index0 }}"

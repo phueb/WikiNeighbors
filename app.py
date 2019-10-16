@@ -100,8 +100,10 @@ def neighbors(corpus_name):
     corpus = Corpus(corpus_name)
     responder = Responder.load_from_session(session, corpus)
 
+    valid_words = session['validated_words']
+
     results = []
-    for word in session['validated_words']:
+    for word in valid_words:
         sorted_neighbors, sorted_sims = responder.get_neighbors(word)
         top_neighbors = sorted_neighbors[-config.Max.num_neighbors:][::-1]
         top_sims = sorted_sims[-config.Max.num_neighbors:][::-1]
@@ -113,12 +115,22 @@ def neighbors(corpus_name):
         res = (word, table)
         results.append(res)
 
+    # filtered sim table (sims between all word pairs)
+    chart = pygal.Bar()
+    for word in valid_words:
+        sims = responder.get_sims(word, valid_words)
+        chart.add(word, [s.round(2) for s in sims])
+    chart.x_labels = ['{:<20}'.format(w) for w in valid_words]
+    filtered_sim_table = chart.render_table(style=True)
+
     elapsed = timer() - start
     return render_template('neighbors.html',
                            topbar_dict=topbar_dict,
                            corpus_name=corpus_name,
-                           words=session['validated_words'],
+                           words=valid_words,
                            results=results,
+                           filtered_sim_table=filtered_sim_table,
+                           num_svd_dims=config.Corpus.num_svd_dimensions,
                            num_words=human_format(responder.specs.vocab_size),
                            num_docs=human_format(responder.specs.corpus_size),
                            elapsed=elapsed
