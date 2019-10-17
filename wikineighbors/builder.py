@@ -66,8 +66,10 @@ class SimMatBuilder:
         print('Percentage of non-zeros in term-by-doc matrix: {}%'.format(num_nonzeros / term_doc_mat.size * 100))
 
         # reduce dimensionality
-        transformer = IncrementalPCA(n_components=config.Sims.num_svd_dimensions)
-        reduced_mat = transformer.fit_transform(term_doc_mat)
+        reducer = IncrementalPCA(n_components=config.Sims.num_svd_dimensions,
+                                 copy=False,
+                                 batch_size=1000 * 1000)  # TODO test batch size
+        reduced_mat = reducer.fit_transform(term_doc_mat)
 
         # cosine
         res = cosine_similarity(reduced_mat)
