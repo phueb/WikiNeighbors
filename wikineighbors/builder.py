@@ -51,10 +51,10 @@ class SimMatBuilder:
         self.check_memory()
 
         print('Making term-by-doc matrix...')
-        num_workers = 2  # using 6 may cause memory error
+        num_workers = 4  # using 6 may cause memory error
         pool = Pool(num_workers)
         chunks = pool.starmap(self._make_term_by_window_mat_chunk,
-                              zip(self.w2dfs_paths, vocab * len(self.w2dfs_paths)))
+                              zip(self.w2dfs_paths, [vocab] * len(self.w2dfs_paths)))
 
         res = np.hstack(chunks, dtype=np.int16)  # TODO test
         print('Term-by-doc matrix has shape {}'.format(res.shape))
