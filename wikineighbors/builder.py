@@ -1,8 +1,7 @@
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import pickle
-from scipy import sparse
-from scipy.sparse import linalg as slinalg
+from sklearn.decomposition import IncrementalPCA
 from collections import Counter
 from multiprocessing import Pool
 from cached_property import cached_property
@@ -51,12 +50,12 @@ class SimMatBuilder:
         self.check_memory()
 
         print('Making term-by-doc matrix...')
-        num_workers = 4  # using 6 may cause memory error
+        num_workers = 2  # do not use more than 2 if not more than 32GB memory is available
         pool = Pool(num_workers)
         chunks = pool.starmap(self._make_term_by_window_mat_chunk,
                               zip(self.w2dfs_paths, [vocab] * len(self.w2dfs_paths)))
 
-        res = np.hstack(chunks, dtype=np.int16)  # TODO test
+        res = np.hstack(chunks)  # TODO test
         print('Term-by-doc matrix has shape {}'.format(res.shape))
         return res
 
@@ -65,11 +64,10 @@ class SimMatBuilder:
         # convert to sparse format
         num_nonzeros = np.count_nonzero(term_doc_mat)
         print('Percentage of non-zeros in term-by-doc matrix: {}%'.format(num_nonzeros / term_doc_mat.size * 100))
-        sparse_mat = sparse.csr_matrix(term_doc_mat).asfptype()
 
-        # svd
-        u, s, v = slinalg.svds(sparse_mat, k=config.Sims.num_svd_dimensions)
-        reduced_mat = u[:, :config.Sims.num_svd_dimensions]
+        # reduce dimensionality
+        transformer = IncrementalPCA(n_components=config.Sims.num_svd_dimensions)
+        reduced_mat = transformer.fit_transform(term_doc_mat)
 
         # cosine
         res = cosine_similarity(reduced_mat)
