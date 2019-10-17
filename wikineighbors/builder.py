@@ -102,7 +102,7 @@ class SimMatBuilder:
     @cached_property
     def w2dfs_paths(self):
         res = []
-        for param_name in self.corpus.param_names[:config.Sims.num_w2df_chunks]:
+        for param_name in self.corpus.param_names:
             param_path = to_param_path(param_name)
             w2df_path = param_path / to_w2dfs_file_name(self.specs.corpus_size, self.specs.cat)
             if not w2df_path.exists():
