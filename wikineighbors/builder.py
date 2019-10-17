@@ -1,10 +1,11 @@
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import pickle
-from sklearn.decomposition import IncrementalPCA
+from sklearn.decomposition import TruncatedSVD
 from collections import Counter
 from multiprocessing import Pool
 from cached_property import cached_property
+from scipy.sparse import csr_matrix
 
 from wikineighbors.exceptions import WikiNeighborsNoMemory
 from wikineighbors.exceptions import WikiNeighborsMissingW2Dfs
@@ -66,10 +67,9 @@ class SimMatBuilder:
         print('Percentage of non-zeros in term-by-doc matrix: {}%'.format(num_nonzeros / term_doc_mat.size * 100))
 
         # reduce dimensionality
-        reducer = IncrementalPCA(n_components=config.Sims.num_svd_dimensions,
-                                 copy=False,
-                                 batch_size=1000 * 1000)  # TODO test batch size
-        reduced_mat = reducer.fit_transform(term_doc_mat)
+        reducer = TruncatedSVD(n_components=config.Sims.num_svd_dimensions)
+        sparse_mat = csr_matrix(term_doc_mat)
+        reduced_mat = reducer.fit_transform(sparse_mat)
 
         # cosine
         res = cosine_similarity(reduced_mat)
@@ -102,7 +102,7 @@ class SimMatBuilder:
     @cached_property
     def w2dfs_paths(self):
         res = []
-        for param_name in self.corpus.param_names:
+        for param_name in self.corpus.param_names[:config.Sims.num_w2df_chunks]:
             param_path = to_param_path(param_name)
             w2df_path = param_path / to_w2dfs_file_name(self.specs.corpus_size, self.specs.cat)
             if not w2df_path.exists():
