@@ -12,5 +12,5 @@ def get_corpus_size_and_cat(file_name):
     return tmp[0], tmp[2]
 
 
-def make_w2dfs_file_name(specs):
-    return 'w2dfs_{}_{}.pkl'.format(specs.corpus_size, specs.cat)
+def to_w2dfs_file_name(corpus_size, cat):
+    return 'w2dfs_{}_{}.pkl'.format(corpus_size, cat)

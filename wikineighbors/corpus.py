@@ -3,6 +3,7 @@ from cached_property import cached_property
 from wikineighbors.params import CorpusParams
 from wikineighbors.exceptions import WikiNeighborsNoArticlesFound
 from wikineighbors.utils import gen_100_param_names, to_param_path
+from wikineighbors.file_names import to_w2dfs_file_name
 from wikineighbors import config
 
 
@@ -72,4 +73,5 @@ class Corpus:
     @cached_property
     def w2dfs_names(self):
         first_param_path = to_param_path(self.param_names[0])
-        return [p.name for p in first_param_path.glob('w2dfs_*_*.pkl')]
+        pattern = to_w2dfs_file_name('*', '*')
+        return [p.name for p in first_param_path.glob(pattern)]

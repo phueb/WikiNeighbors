@@ -4,10 +4,12 @@ import pickle
 from scipy import sparse
 from scipy.sparse import linalg as slinalg
 from collections import Counter
+from cached_property import cached_property
 
 from wikineighbors.exceptions import WikiNeighborsNoMemory
+from wikineighbors.exceptions import WikiNeighborsMissingW2Dfs
 from wikineighbors.file_names import make_cached_file_name
-from wikineighbors.file_names import make_w2dfs_file_name
+from wikineighbors.file_names import to_w2dfs_file_name
 from wikineighbors.utils import to_param_path
 from wikineighbors import config
 
@@ -75,6 +77,19 @@ class SimMatBuilder:
 
         return list(vocab)
 
+    @cached_property
+    def w2dfs_paths(self):
+        res = []
+        for param_name in self.corpus.param_names:
+            param_path = to_param_path(param_name)
+            w2df_path = param_path / to_w2dfs_file_name(self.specs.corpus_size, self.specs.cat)
+            if not w2df_path.exists():
+                raise WikiNeighborsMissingW2Dfs(w2df_path)
+            else:
+                print('Will load {}'.format(w2df_path))
+                res.append(w2df_path)
+        return res
+
     def _build(self):
         # check that memory is sufficient
         shape = (self.specs.vocab_size, self.specs.corpus_size)
@@ -88,13 +103,10 @@ class SimMatBuilder:
         # make w2cf (word 2 corpus-frequency)
         w2cf = Counter()
         n = 0
-        for param_name in self.corpus.param_names:
-            param_path = to_param_path(param_name)
-            w2df_path = param_path / make_w2dfs_file_name(self.specs)
-            print('Trying to load {}'.format(w2df_path))
-            with w2df_path.open('rb') as f:
+        for w2dfs_path in self.w2dfs_paths:
+            with w2dfs_path.open('rb') as f:
                 w2dfs = pickle.load(f)
-            print('Loaded')
+            print('Loaded {}'.format(w2dfs_path))
             for w2df in w2dfs:
                 w2cf.update(w2df)
                 n += 1

@@ -13,6 +13,7 @@ from wikineighbors.exceptions import WikiNeighborsNoArticlesFound
 from wikineighbors.exceptions import WikiNeighborsNoVocabFound
 from wikineighbors.exceptions import WikiNeighborsNoMemory
 from wikineighbors.exceptions import WikiNeighborsNoSpecs
+from wikineighbors.exceptions import WikiNeighborsMissingW2Dfs
 
 
 class WordInputForm(Form):
@@ -233,6 +234,14 @@ def handler(exception):
 
 
 @app.errorhandler(WikiNeighborsNoSpecs)
+def handler(exception):
+    return render_template('error.html',
+                           message=exception.message,
+                           status_code=500,
+                           topbar_dict=topbar_dict)
+
+
+@app.errorhandler(WikiNeighborsMissingW2Dfs)
 def handler(exception):
     return render_template('error.html',
                            message=exception.message,
