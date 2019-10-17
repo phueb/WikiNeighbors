@@ -15,7 +15,7 @@ def make_home_data():
     buttons = ['info', 'vocab', 'query']  # careful, these must also be names of URLS
     headers = ['Corpus ID', 'Last modified']
     rows = []
-    all_param_paths = config.RemoteDirs.runs.glob('param*')
+    all_param_paths = config.RemoteDirs.wiki_runs.glob('param*')
     for p in sorted(all_param_paths, key=lambda p: get_id_as_int(p.name)):
         params = CorpusParams(p)
         # do not assign a row to a configuration which has already been assigned a row

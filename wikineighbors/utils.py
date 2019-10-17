@@ -16,7 +16,7 @@ def human_format(number):
 
 
 def to_param_path(param_name):
-    return config.RemoteDirs.runs / param_name
+    return config.RemoteDirs.wiki_runs / param_name
 
 
 def sort_rows(rows, header, order):

@@ -3,6 +3,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import pickle
 from scipy import sparse
 from scipy.sparse import linalg as slinalg
+from collections import Counter
 
 from wikineighbors.exceptions import WikiNeighborsNoMemory
 from wikineighbors.exceptions import WikiNeighborsNoSpecs
@@ -74,11 +75,7 @@ class SimMatBuilder:
                 num_too_big += 1
                 continue
 
-            if self.specs.cat != config.Corpus.no_cat:
-                if w.pos_ == self.specs.cat:
-                    vocab.add(w.text.lower())
-            else:
-                vocab.add(w.text.lower())
+            vocab.add(w.lower())
 
             if len(vocab) == self.specs.vocab_size:
                 break
@@ -106,9 +103,18 @@ class SimMatBuilder:
 
         # TODO load w2dfs from WikiOrder
         #  and in a multiprocesing loop, update w2cf and populate term-doc-mat
+        w2cf = Counter()
+        param_path = config.RemoteDirs.wiki_runs / self.corpus.first_param_name
+        for w2df_path in param_path.glob(
+                'w2dfs_{}_{}_part*of*.pkl'.format(self.specs.corpus_size,
+                                                  self.specs.cat)):
+            print(w2df_path.name)
 
-        raise NotImplementedError
+            with w2df_path.open('rb') as f:
+                w2dfs = pickle.load(f)
 
+            for w2df in w2dfs:
+                w2cf.update(w2df)
 
         vocab = self.make_vocab(w2cf)
         del w2cf

@@ -33,6 +33,10 @@ class Corpus:
         return len(self.param_names)
 
     @cached_property
+    def first_param_name(self):
+        return self.param_names[0]  # corpus name is derived from this
+
+    @cached_property
     def param_names(self):
         param_names = []
         parts = set()  # a param_name is only valid if its attribute "parts" was not previously collected
