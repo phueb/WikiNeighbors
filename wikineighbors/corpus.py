@@ -33,10 +33,6 @@ class Corpus:
         return len(self.param_names)
 
     @cached_property
-    def first_param_name(self):
-        return self.param_names[0]  # corpus name is derived from this
-
-    @cached_property
     def param_names(self):
         param_names = []
         parts = set()  # a param_name is only valid if its attribute "parts" was not previously collected
@@ -73,8 +69,7 @@ class Corpus:
                 res.append(body_paths[0])
         return res
 
-    def gen_docs(self):
-        for p in self.txt_paths:
-            with p.open('r') as f:
-                for doc in f:  # lazy generator
-                    yield doc
+    @cached_property
+    def w2dfs_names(self):
+        first_param_path = to_param_path(self.param_names[0])
+        return [p.name for p in first_param_path.glob('w2dfs_*_*.pkl')]

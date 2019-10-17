@@ -61,30 +61,17 @@
             </label>
         {% endfor %}
         <div class="mdl-layout-spacer"></div>
-        <h5>Number of articles</h5>
-        {% for corpus_size in corpus_sizes %}
-            <label for="corpus_size_id{{ loop.index0 }}" class="mdl-radio mdl-js-radio mdl-js-ripple-effect inline-radio">
+        <h5>Number of articles & Part-of-Speech</h5>
+        {% for w2dfs_name in w2dfs_names %}
+            <label for="w2dfs_name_id{{ loop.index0 }}" class="mdl-radio mdl-js-radio mdl-js-ripple-effect inline-radio">
                 <input type="radio"
-                       name="corpus_size"
-                       id="corpus_size_id{{ loop.index0 }}"
+                       name="w2dfs_name"
+                       id="w2dfs_name_id{{ loop.index0 }}"
                        class="mdl-radio__button"
-                       value="{{ corpus_size }}" form="form-cache-vocab">
-                <span class="mdl-radio__label">{{ corpus_size }}</span>
+                       value="{{ w2dfs_name }}" form="form-cache-vocab">
+                <span class="mdl-radio__label">{{ w2dfs_name }}</span>
             </label>
         {% endfor %}
-        <div class="mdl-layout-spacer"></div>
-        <h5>Part-of-speech Class</h5>
-        {% for cat in cats %}
-            <label for="cat_id{{ loop.index0 }}" class="mdl-radio mdl-js-radio mdl-js-ripple-effect inline-radio">
-                <input type="radio"
-                       name="cat"
-                       id="cat_id{{ loop.index0 }}"
-                       class="mdl-radio__button"
-                       value="{{ cat }}" form="form-cache-vocab">
-                <span class="mdl-radio__label">{{ cat }}</span>
-            </label>
-        {% endfor %}
-
     </div>
 
     <div class="mdl-card__actions mdl-card--border">

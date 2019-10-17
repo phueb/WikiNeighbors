@@ -8,6 +8,7 @@ from timeit import default_timer as timer
 from wtforms import Form, StringField
 
 import wikineighbors
+from wikineighbors.file_names import get_corpus_size_and_cat
 from wikineighbors.exceptions import WikiNeighborsNoArticlesFound
 from wikineighbors.exceptions import WikiNeighborsNoVocabFound
 from wikineighbors.exceptions import WikiNeighborsNoMemory
@@ -87,9 +88,8 @@ def vocab(corpus_name):
     return render_template('vocab.html',
                            topbar_dict=topbar_dict,
                            corpus_name=corpus_name,
-                           cats=config.Corpus.cats,
-                           vocab_sizes=config.Corpus.vocab_sizes,
-                           corpus_sizes=config.Corpus.corpus_sizes,
+                           vocab_sizes=config.Sims.vocab_sizes,
+                           w2dfs_names=corpus.w2dfs_names,
                            cached_vocab_names=corpus.cached_vocab_names,
                            )
 
@@ -130,7 +130,7 @@ def neighbors(corpus_name):
                            words=valid_words,
                            results=results,
                            filtered_sim_table=filtered_sim_table,
-                           num_svd_dims=config.Corpus.num_svd_dimensions,
+                           num_svd_dims=config.Sims.num_svd_dimensions,
                            num_words=human_format(responder.specs.vocab_size),
                            num_docs=human_format(responder.specs.corpus_size),
                            elapsed=elapsed
@@ -172,24 +172,23 @@ def validate(corpus_name):
 
 @app.route('/cache_vocab/<string:corpus_name>', methods=['GET', 'POST'])
 def cache_vocab(corpus_name):
-    corpus = Corpus(corpus_name)
 
     # specs for builder
     vocab_size = request.args.get('vocab_size')
-    corpus_size = request.args.get('corpus_size')  # number of articles
-    cat = request.args.get('cat')  # use words that are only in chosen POS category
+    w2dfs_name = request.args.get('w2dfs_name')
 
     # validation
-    if not vocab_size or not corpus_size or not cat:
+    if not vocab_size or not w2dfs_name:
         return render_template('error.html',
                                message='Incomplete submission',
                                status_code=500,
                                topbar_dict=topbar_dict)
 
-    specs = Specs(vocab_size, corpus_size, cat)
+    corpus = Corpus(corpus_name)
+    corpus_size, cat = get_corpus_size_and_cat(w2dfs_name)
+    specs = Specs(vocab_size=vocab_size, corpus_size=corpus_size, cat=cat)
     builder = SimMatBuilder(corpus, specs)
     builder.build_and_save()  # saves vocab + sim mat
-
     return redirect(url_for('vocab', corpus_name=corpus_name))
 
 

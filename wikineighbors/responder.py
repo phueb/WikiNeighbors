@@ -5,6 +5,7 @@ from wikineighbors.params import Specs
 
 from wikineighbors.exceptions import WikiNeighborsNoVocabFound
 from wikineighbors.exceptions import WikiNeighborsNoSpecs
+from wikineighbors.file_names import make_cached_file_name
 from wikineighbors import config
 
 
@@ -17,20 +18,16 @@ class Responder:
         self.corpus = corpus
         self.cache_path = config.LocalDirs.cache / corpus.name
         self.specs = specs
-        self.vocab_file_name = 'vocab_{}_{}_{}.pkl'.format(self.specs.vocab_size,
-                                                           self.specs.corpus_size,
-                                                           self.specs.cat)
-        self.sim_mat_file_name = 'sim_mat_{}_{}_{}.pkl'.format(self.specs.vocab_size,
-                                                               self.specs.corpus_size,
-                                                               self.specs.cat)
+        self.vocab_file_name = make_cached_file_name('vocab', specs)
+        self.sim_mat_file_name = make_cached_file_name('sim_mat', specs)
 
     @classmethod
     def load_from_session(cls, session, corpus):
         try:
-            args = session.get(corpus.name)
+            vocab_name = session.get(corpus.name)
         except KeyError:  # user has not previously selected specs for corpus
             raise WikiNeighborsNoSpecs(corpus.name)
-        specs = Specs(*args.split(corpus.separator))
+        specs = Specs(*vocab_name.split(corpus.separator))
         return cls(corpus, specs)
 
     @cached_property
