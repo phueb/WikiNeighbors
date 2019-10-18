@@ -55,7 +55,7 @@ class SimMatBuilder:
         chunks = pool.starmap(self._make_term_by_window_mat_chunk,
                               zip(self.w2dfs_paths, [vocab] * len(self.w2dfs_paths)))
 
-        res = np.hstack(chunks)  # TODO test
+        res = np.hstack(chunks)
         print('Term-by-doc matrix has shape {}'.format(res.shape))
         return res
 
