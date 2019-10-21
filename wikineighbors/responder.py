@@ -1,7 +1,7 @@
 from cached_property import cached_property
 import pickle
 
-from wikineighbors.params import Specs
+from wikineighbors.specs import Specs
 
 from wikineighbors.exceptions import WikiNeighborsNoVocabFound
 from wikineighbors.exceptions import WikiNeighborsNoSpecs

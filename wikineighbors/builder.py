@@ -30,7 +30,7 @@ class SimMatBuilder:
         self.vocab_file_name = make_cached_file_name('vocab', specs)
         self.sim_mat_file_name = make_cached_file_name('sim_mat', specs)
 
-        # TODO test
+        # temporary directory for large mem-mapped term-doc matrix
         self.mmap_path = Path(tempfile.mkdtemp()) / 'term_doc_mat.mmap'
         if self.mmap_path.exists():
             shutil.rmtree(str(self.mmap_path.parent))
@@ -69,8 +69,7 @@ class SimMatBuilder:
         return vocab, sim_mat
 
     def _make_vocab(self, w2cf):
-        print('Making vocab with size={} and cat={}'.format(
-            self.specs.vocab_size, self.specs.cat))
+        print(f'Making vocab with size={self.specs.vocab_size} and cat={self.specs.cat}')
         vocab = set()
         num_too_big = 0
         for w, f in sorted(w2cf.items(), key=lambda i: i[1], reverse=True):
@@ -92,27 +91,26 @@ class SimMatBuilder:
         return list(vocab)
 
     def _make_term_by_doc_mat(self, vocab, chunk_sizes):
+
+        # init matrix, but dump it to file for mem-mapping
+        print('Making term-by-doc matrix...')
         init_mat = self.init_term_doc_mat()
-        print('Dumping initialized matrix to disk')
         dump(init_mat, self.mmap_path)  # dump large array to file for mem-mapping
-        print('Deleting in-memory object')
         del init_mat  # in-memory object can be deleted
 
         # If data are opened using the w+ or r+ mode in the main program,
         # the worker will get r+ mode access.
         # Thus the worker will be able to write its results directly to the original data,
         # alleviating the need of the serialization to send back the results to the parent process.
-        print('Loading mem-mapped object')
         res = load(self.mmap_path, 'r+')
 
-        print('Making term-by-doc matrix...')
         memmap_chunks = np.hsplit(res, np.cumsum(chunk_sizes[:-1]))
 
-        # TODO last chunk is abnormally small
+        # sanity check
         for c in memmap_chunks:
             print(c.shape)
-        print(len(memmap_chunks), len(self.w2dfs_paths))
 
+        assert len(memmap_chunks) == len(self.w2dfs_paths)
         num_workers = 2  # do not use more than 2 if not more than 32GB memory is available
         Parallel(n_jobs=num_workers, max_nbytes=None)(
             delayed(_make_term_by_window_mat_chunk)(memmap_chunk, w2dfs_path, vocab)
@@ -126,7 +124,7 @@ class SimMatBuilder:
     def _make_sim_mat(term_doc_mat):
         # convert to sparse format
         num_nonzeros = np.count_nonzero(term_doc_mat)
-        print('Percentage of non-zeros in term-by-doc matrix: {}%'.format(num_nonzeros / term_doc_mat.size * 100))
+        print(f'Percentage of non-zeros in term-by-doc matrix: {num_nonzeros / term_doc_mat.size * 100}%')
 
         # reduce dimensionality
         reducer = TruncatedSVD(n_components=config.Sims.num_svd_dimensions)
@@ -147,7 +145,7 @@ class SimMatBuilder:
             if not w2df_path.exists():
                 raise WikiNeighborsMissingW2Dfs(w2df_path)
             else:
-                print('Will load {}'.format(w2df_path))
+                print(f'Will load {w2df_path}')
                 res.append(w2df_path)
         return res
 
@@ -157,7 +155,7 @@ class SimMatBuilder:
         try:
             init_mat = np.zeros(shape, dtype=np.int16)
             num_mbs = init_mat.nbytes / 1e6
-            print('Successfully initialized matrix with shape={} requiring {} megabytes'.format(shape, num_mbs))
+            print(f'Successfully initialized matrix with shape={shape} requiring {num_mbs} megabytes')
         except MemoryError:
             raise WikiNeighborsNoMemory(shape)
         else:
@@ -170,11 +168,11 @@ class SimMatBuilder:
 
         with (self.cache_path / self.vocab_file_name).open('wb') as f:
             pickle.dump(vocab, f)
-        print('Saved vocab to {}'.format(config.LocalDirs.cache))
+        print(f'Saved vocab to {config.LocalDirs.cache}')
 
         with (self.cache_path / self.sim_mat_file_name).open('wb') as f:
             pickle.dump(sim_mat, f)
-        print('Saved sim_mat to {}'.format(config.LocalDirs.cache))
+        print(f'Saved sim_mat to {config.LocalDirs.cache}')
 
 
 def _make_term_by_window_mat_chunk(memmap_chunk, w2dfs_path, vocab):
@@ -182,8 +180,8 @@ def _make_term_by_window_mat_chunk(memmap_chunk, w2dfs_path, vocab):
 
     with w2dfs_path.open('rb') as f:
         w2dfs = pickle.load(f)
-    print('Worker loaded {}'.format(w2dfs_path))
+    print(f'Worker loaded {w2dfs_path}')
 
     for col_id, w2df in enumerate(w2dfs):
         memmap_chunk[:, col_id] = [w2df.get(w, 0) for w in vocab]
-    print('Worker populated memmap chunk with shape {}'.format(memmap_chunk.shape), flush=True)
+    print(f'Worker populated memmap chunk with shape {memmap_chunk.shape}', flush=True)

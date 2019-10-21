@@ -289,7 +289,7 @@ if __name__ == "__main__":  # pycharm does not use this
     from wikineighbors.corpus import Corpus
     from wikineighbors.responder import Responder
     from wikineighbors.builder import SimMatBuilder
-    from wikineighbors.params import Specs
+    from wikineighbors.specs import Specs
 
     topbar_dict = {'listing': config.RemoteDirs.research_data,
                    'hostname': hostname,
