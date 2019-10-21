@@ -46,6 +46,10 @@ class SimMatBuilder:
         w2cf = Counter()
         chunk_sizes = []
         for w2dfs_path in self.w2dfs_paths:
+
+            # TODO use joblib to memoize the result of pickle.load so that it can be reused later
+            #  (without being saved in memory)
+
             with w2dfs_path.open('rb') as f:
                 w2dfs = pickle.load(f)
             chunk_size = len(w2dfs)
