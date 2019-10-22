@@ -41,6 +41,7 @@ class Max:
 
 
 class Sims:
+    num_jobs = 6
     max_word_size = 8
     vocab_sizes = [1000, 2000, 3000, 4000, 5000, 10000]
     num_svd_dimensions = 30  # keep this low to prevent memory error

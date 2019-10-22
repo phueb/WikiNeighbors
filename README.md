@@ -2,7 +2,7 @@
 
 ![Example Screenshot](example.png)
 
-Show neighbors in Wikipedia co-occurrence space with Python's Flask web framework.
+A Flask-based web application for showing nearest neighbors for words in Wikipedia word-document co-occurrence space. 
 
 ## Usage
 

@@ -9,6 +9,7 @@ from collections import Counter
 from cached_property import cached_property
 from scipy.sparse import csr_matrix
 import shutil
+from timeit import default_timer as timer
 
 from wikineighbors.exceptions import WikiNeighborsNoMemory
 from wikineighbors.exceptions import WikiNeighborsMissingW2Dfs
@@ -31,15 +32,18 @@ class SimMatBuilder:
         self.sim_mat_file_name = make_cached_file_name('sim_mat', specs)
 
         # temporary directory for large mem-mapped term-doc matrix
-        self.mmap_path = Path(tempfile.mkdtemp()) / 'term_doc_mat.mmap'
-        if self.mmap_path.exists():
-            shutil.rmtree(str(self.mmap_path.parent))
+        for p in Path(tempfile.gettempdir()).glob('wikineighbors*'):
+            print(f'Removing {p}')
+            shutil.rmtree(str(p))
+        temp_dir = Path(tempfile.mkdtemp(prefix='wikineighbors'))
+        self.mmap_path = temp_dir / 'term_doc_mat.mmap'
 
     def build_and_save(self):
         vocab, sim_mat = self._build()
         self._save_to_disk(vocab, sim_mat)
         del vocab
         del sim_mat
+        shutil.rmtree(str(self.mmap_path.parent))
 
     def _build(self):
         # make w2cf (word 2 corpus-frequency)
@@ -115,13 +119,11 @@ class SimMatBuilder:
             print(c.shape)
 
         assert len(memmap_chunks) == len(self.w2dfs_paths)
-        num_workers = 2  # do not use more than 2 if not more than 32GB memory is available
-        Parallel(n_jobs=num_workers, max_nbytes=None)(
+        Parallel(n_jobs=config.Sims.num_jobs, max_nbytes=None)(
             delayed(_make_term_by_window_mat_chunk)(memmap_chunk, w2dfs_path, vocab)
             for memmap_chunk, w2dfs_path in zip(memmap_chunks, self.w2dfs_paths)
         )
 
-        print(f'Term-by-doc matrix sum={res.sum}')
         return res
 
     @staticmethod
@@ -131,6 +133,7 @@ class SimMatBuilder:
         print(f'Percentage of non-zeros in term-by-doc matrix: {num_nonzeros / term_doc_mat.size * 100}%')
 
         # reduce dimensionality
+        print('Performing truncated SVD...')
         reducer = TruncatedSVD(n_components=config.Sims.num_svd_dimensions)
         sparse_mat = csr_matrix(term_doc_mat)
         reduced_mat = reducer.fit_transform(sparse_mat)
@@ -182,10 +185,20 @@ class SimMatBuilder:
 def _make_term_by_window_mat_chunk(memmap_chunk, w2dfs_path, vocab):
     print('Starting worker', flush=True)
 
+    w2id = {w: n for n, w in enumerate(vocab)}
+
     with w2dfs_path.open('rb') as f:
         w2dfs = pickle.load(f)
     print(f'Worker loaded {w2dfs_path}')
 
+    start = timer()
     for col_id, w2df in enumerate(w2dfs):
-        memmap_chunk[:, col_id] = [w2df.get(w, 0) for w in vocab]
+        if col_id % 10000 == 0:
+            print(col_id, timer() - start)
+
+        # writing to disk is very slow, so only write nonzero values
+        words_in_doc = [w for w in vocab if w in w2df]
+        row_ids = [w2id[w] for w in words_in_doc]
+        memmap_chunk[row_ids, col_id] = [w2df[w] for w in words_in_doc]
+
     print(f'Worker populated memmap chunk with shape {memmap_chunk.shape}', flush=True)
