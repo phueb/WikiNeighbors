@@ -30,7 +30,9 @@ To build a similarity matrix using at least 4.8M documents, it is recommended to
 
 ### Speed
 
-On a modern desktop, it takes about 15 minutes to build a 1000K vocabulary using 4.8M documents. 
+On a modern desktop, it takes about 
+* 15 minutes to build a 1000K vocabulary using 4.8M documents. 
+* 90 minutes to build a 4000K vocabulary using 4.8M documents. 
 
 ### Memory
 
