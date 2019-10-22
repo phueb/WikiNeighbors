@@ -82,11 +82,11 @@ def query(corpus_name):
                            )
 
 
-@app.route('/vocab/<string:corpus_name>', methods=['GET', 'POST'])
-def vocab(corpus_name):
+@app.route('/build/<string:corpus_name>', methods=['GET', 'POST'])
+def build(corpus_name):
     corpus = Corpus(corpus_name)
 
-    return render_template('vocab.html',
+    return render_template('build.html',
                            topbar_dict=topbar_dict,
                            corpus_name=corpus_name,
                            vocab_sizes=config.Sims.vocab_sizes,
@@ -171,8 +171,8 @@ def validate(corpus_name):
         return redirect(url_for('neighbors', corpus_name=corpus_name))
 
 
-@app.route('/cache_vocab/<string:corpus_name>', methods=['GET', 'POST'])
-def cache_vocab(corpus_name):
+@app.route('/cache_sims/<string:corpus_name>', methods=['GET', 'POST'])
+def cache_sims(corpus_name):
 
     # specs for builder
     vocab_size = request.args.get('vocab_size')
@@ -190,7 +190,7 @@ def cache_vocab(corpus_name):
     specs = Specs(vocab_size=vocab_size, corpus_size=corpus_size, cat=cat)
     builder = SimMatBuilder(corpus, specs)
     builder.build_and_save()  # saves vocab + sim mat
-    return redirect(url_for('vocab', corpus_name=corpus_name))
+    return redirect(url_for('build', corpus_name=corpus_name))
 
 
 @app.route('/load_vocab/<string:corpus_name>', methods=['GET', 'POST'])
@@ -204,7 +204,7 @@ def load_vocab(corpus_name):
                                topbar_dict=topbar_dict)
 
     session[corpus_name] = vocab_name
-    return redirect(url_for('vocab', corpus_name=corpus_name))
+    return redirect(url_for('build', corpus_name=corpus_name))
 
 # -------------------------------------------- error handling
 

@@ -12,7 +12,7 @@ def make_home_data():
     to achieve this, param_name folders must be iterated over in order (param_1, param2, ...)
     """
     reduced_param2vals = []
-    buttons = ['info', 'vocab', 'query']  # careful, these must also be names of URLS
+    buttons = ['info', 'build', 'query']  # careful, these must also be names of URLS
     headers = ['Corpus ID', 'Last modified']
     rows = []
     all_param_paths = config.RemoteDirs.wiki_runs.glob('param*')

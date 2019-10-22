@@ -4,21 +4,33 @@
 
 Show neighbors in Wikipedia co-occurrence space with Python's Flask web framework.
 
-## Performance
+## Usage
 
-### Warning
+Before retrieving neighbors, a similarity matrix must be built.
+There are various choices available to the user:
+* vocabulary size
+* number of documents (Wikipedia articles)
 
-To build/cache a vocabulary using at least 4.8M documents, it is recommended to have at least 32GB of memory.
+To do so, click on the button labeled `build` for a given corpus.
+Next select a vocabulary size and the name of the pickle file containing a selection of word counts.
+For example, the file `4800_NOUN.pkl` contains 4,800 dictionaries, mapping nouns to their frequency, one for each article.
 
-### Speed
-
-On a modern desktop, it takes about 15 minutes to build a 1000K vocabulary using 4.8M documents. 
 During the build,
-* pickled dictionaries are loaded from the file server which contain word counts for each article.
+* pickled dictionaries are loaded into memory
 * a vocabulary is created
 * a word-by-document co-occurrence matrix is populated 
 * a similarity matrix is constructed
 * the vocabulary and similarity matrix are saved to disk 
+
+### Warning
+
+To build a similarity matrix using at least 4.8M documents, it is recommended to have at least 32GB of memory.
+
+## Performance
+
+### Speed
+
+On a modern desktop, it takes about 15 minutes to build a 1000K vocabulary using 4.8M documents. 
 
 ### Memory
 

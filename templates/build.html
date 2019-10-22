@@ -21,7 +21,7 @@
     <form action="{{ url_for('load_vocab', corpus_name=corpus_name) }}" id="form-load-vocab"></form>
 
     <div class="mdl-card__title">
-        <h3 class="mdl-card__title-text">Load existing vocabulary:</h3>
+        <h3 class="mdl-card__title-text">Load existing similarity matrix:</h3>
     </div>
     <div class="mdl-card__supporting-text">
         {%  for vocab_name in cached_vocab_names %}
@@ -37,16 +37,16 @@
     </div>
 
     <div class="mdl-card__actions mdl-card--border">
-        <input type="submit" name="load_vocab" class="mdl-button trigger-loading" value="load vocab" form="form-load-vocab">
+        <input type="submit" name="load_vocab" class="mdl-button trigger-loading" value="load sims" form="form-load-vocab">
     </div>
 {% endblock %}
 
 {% block ludwigviz_bottom %}
     <div class="mdl-card__title">
-        <h3 class="mdl-card__title-text">Build new Vocabulary:</h3>
+        <h3 class="mdl-card__title-text">Build new Similarity Matrix:</h3>
     </div>
 
-    <form action="{{ url_for('cache_vocab', corpus_name=corpus_name) }}" id="form-cache-vocab"></form>
+    <form action="{{ url_for('cache_sims', corpus_name=corpus_name) }}" id="form-cache-sims"></form>
 
     <div class="mdl-card__supporting-text">
         <h5>Vocabulary Size</h5>
@@ -56,7 +56,7 @@
                        name="vocab_size"
                        id="size_id{{ loop.index0 }}"
                        class="mdl-radio__button"
-                       value="{{ vocab_size }}" form="form-cache-vocab">
+                       value="{{ vocab_size }}" form="form-cache-sims">
                 <span class="mdl-radio__label">{{ vocab_size }}</span>
             </label>
         {% endfor %}
@@ -68,14 +68,14 @@
                        name="w2dfs_name"
                        id="w2dfs_name_id{{ loop.index0 }}"
                        class="mdl-radio__button"
-                       value="{{ w2dfs_name }}" form="form-cache-vocab">
+                       value="{{ w2dfs_name }}" form="form-cache-sims">
                 <span class="mdl-radio__label">{{ w2dfs_name }}</span>
             </label>
         {% endfor %}
     </div>
 
     <div class="mdl-card__actions mdl-card--border">
-        <input type="submit" name="cache_vocab" class="mdl-button trigger-loading" value="build vocab" form="form-cache-vocab">
+        <input type="submit" name="cache_sims" class="mdl-button trigger-loading" value="build sims" form="form-cache-sims">
     </div>
 {% endblock %}
 
