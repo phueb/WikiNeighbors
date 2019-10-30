@@ -78,7 +78,12 @@ class SimMatBuilder:
 
     def _make_vocab(self, w2cf):
         print(f'Making vocab with size={self.specs.vocab_size} and cat={self.specs.cat}')
-        vocab = set()
+
+        # custom words that must be included
+        must_include_list = (config.LocalDirs.root / config.Sims.must_include_f_name).read_text().split('\n')
+        print(f'Including {len(must_include_list)} words in vocab from {config.Sims.must_include_f_name}')
+
+        vocab = set(must_include_list)
         num_too_big = 0
         for w, f in sorted(w2cf.items(), key=lambda i: i[1], reverse=True):
 
