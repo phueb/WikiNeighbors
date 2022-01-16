@@ -18,7 +18,7 @@ def make_home_data():
     all_param_paths = config.RemoteDirs.wiki_runs.glob('param*')
     for p in sorted(all_param_paths, key=lambda p: get_id_as_int(p.name)):
 
-        # make param2val_no_part
+        # make param2val_reduced
         with (p / 'param2val.yaml').open('r') as f:
             param2val = yaml.load(f, Loader=yaml.FullLoader)
         reduced_param2val = param2val
