@@ -59,5 +59,4 @@ The bottom-line is that dumping the matrix ahead of time reduces overhead associ
 
 ## TODO
 
-* add custom words to vocab
 * javascript progressbar when caching vocab
