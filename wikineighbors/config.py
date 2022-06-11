@@ -32,7 +32,7 @@ class Default:
 
 
 class Time:
-    format = '%H:%M %B %d'
+    format = '%B %d %Y'
 
 
 class Max:
