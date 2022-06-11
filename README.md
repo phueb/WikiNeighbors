@@ -2,9 +2,11 @@
 
 ![Example Screenshot](example.png)
 
-A Flask-based web application for showing nearest neighbors for words in Wikipedia word-document co-occurrence space. 
+A browse application built with Python `flask` for exploring neares neighbors for words in Wikipedia word-document co-occurrence space. 
 
 ## Usage
+
+The app is running on a server owned by the [UIUC Learning & Language Lab](http://learninglanguagelab.org/), and can be accessed via the university network [here](http://130.126.181.53:5000/).
 
 Before retrieving neighbors, a similarity matrix must be built.
 There are various choices available to the user:
