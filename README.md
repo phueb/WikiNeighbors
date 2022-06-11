@@ -2,7 +2,7 @@
 
 ![Example Screenshot](example.png)
 
-A browse application built with Python `flask` for exploring neares neighbors for words in Wikipedia word-document co-occurrence space. 
+A browse application built with Python `flask` for exploring nearest neighbors for words in Wikipedia word-document co-occurrence space. 
 
 ## Usage
 
@@ -24,11 +24,21 @@ During the build,
 * a similarity matrix is constructed
 * the vocabulary and similarity matrix are saved to disk 
 
-### Warning
 
-To build a similarity matrix using at least 4.8M documents, it is recommended to have at least 32GB of memory.
+## Advanced
 
-## Performance
+### Running the app locally
+
+The app can be run locally. To do so, clone the repository and:
+
+```bash
+python app.py
+```
+
+The app requires access to the file server owned by the UIUC Language & Learning lab. Make sure you are connected to the campus network, and mounted the shared drive, `ludwig_data`. 
+
+Be warned. To build a similarity matrix using at least 4.8M documents, it is recommended to have at least 32GB of memory.
+
 
 ### Speed
 
