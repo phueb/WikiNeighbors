@@ -36,6 +36,8 @@ def home():
         header = request.args.get('header') or config.Default.header
         order = request.args.get('order') or config.Default.order
         rows = sort_rows(rows, header, order)
+    else:
+        print('Did not find any corpus data.')
 
     return render_template('home.html',
                            topbar_dict=topbar_dict,
@@ -278,7 +280,6 @@ if __name__ == "__main__":  # pycharm does not use this
 
     if namespace.s76:
         wikineighbors.s76 = True
-        print('Changing path to shared drive because --s76')
 
     # import after setting s76 flag
 
@@ -291,7 +292,7 @@ if __name__ == "__main__":  # pycharm does not use this
     from wikineighbors.builder import SimMatBuilder
     from wikineighbors.specs import Specs
 
-    topbar_dict = {'listing': config.RemoteDirs.research_data,
+    topbar_dict = {'listing': config.RemoteDirs.ludwig_data,  # points to s76 from local machine or s76
                    'hostname': hostname,
                    'version': wikineighbors.__version__,
                    'title': wikineighbors.__package__.capitalize()

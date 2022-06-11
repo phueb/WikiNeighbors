@@ -9,13 +9,13 @@ dirs = AppDirs(wikineighbors.__name__, wikineighbors.__author__, wikineighbors._
 
 class RemoteDirs:
     if wikineighbors.s76:
-        research_data = Path('/') / 'mnt' / 'md0' / 'research_data'
+        ludwig_data = Path('/') / 'mnt' / 'md0' / 'ludwig_data'
     else:
-        research_data = Path(wikineighbors.mnt_point) / 'research_data'
-        if not os.path.ismount(research_data):
-            raise OSError('{} not mounted.'.format(research_data))
+        ludwig_data = Path(wikineighbors.mnt_point) / 'ludwig_data'
+        if not os.path.ismount(ludwig_data):
+            raise OSError('{} not mounted.'.format(ludwig_data))
 
-    wiki_runs = research_data / 'CreateWikiCorpus' / 'runs'
+    wiki_runs = ludwig_data / 'CreateWikiCorpus' / 'runs'
 
 
 class LocalDirs:
